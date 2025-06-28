@@ -7,6 +7,7 @@ namespace backend.Models
 	{
 		public User()
 		{
+			
 		}
 	}
 }
