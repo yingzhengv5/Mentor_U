@@ -1,15 +1,19 @@
 ﻿<Properties StartupConfiguration="{B5CEE1AB-68C5-FCEC-EA61-653FFB609ED2}|https">
-  <MultiItemStartupConfigurations />
-  <MonoDevelop.Ide.Workbench ActiveDocument="backend/Models/User.cs">
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workbench ActiveDocument="backend/Models/GroupMember.cs">
     <Files>
       <File FileName="backend/backend.http" Line="1" Column="1" IsPinned="True" />
-      <File FileName="backend/Models/User.cs" Line="1" Column="1" />
+      <File FileName="backend/Models/User.cs" Line="4" Column="1" />
+      <File FileName="backend/Models/Group.cs" Line="1" Column="1" />
+      <File FileName="backend/Models/GroupMember.cs" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="Mentor_U">
-            <Node name="backend" selected="True" />
+            <Node name="backend" expanded="True">
+              <Node name="Models" expanded="True" />
+            </Node>
           </Node>
         </State>
       </Pad>
@@ -18,7 +22,7 @@
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.ItemProperties.backend PreferredExecutionTarget="/Applications/Microsoft Edge.app" />
 </Properties>
