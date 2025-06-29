@@ -49,6 +49,51 @@ namespace backend.Data
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            // Configure Friendship relationships
+            modelBuilder.Entity<Friendship>()
+                .HasOne(f => f.Requester)
+                .WithMany(u => u.RequestedFriendships)
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict); // 使用 Restrict 而不是 Cascade
+
+            modelBuilder.Entity<Friendship>()
+                .HasOne(f => f.Receiver)
+                .WithMany(u => u.ReceivedFriendships)
+                .HasForeignKey(f => f.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure Mentorship relationships
+            modelBuilder.Entity<Mentorship>()
+                .HasOne(m => m.Mentor)
+                .WithMany(u => u.MentorMentorships)
+                .HasForeignKey(m => m.MentorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Mentorship>()
+                .HasOne(m => m.Student)
+                .WithMany(u => u.StudentMentorships)
+                .HasForeignKey(m => m.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Mentorship>()
+                .HasOne(m => m.Group)
+                .WithMany(g => g.Mentorships)
+                .HasForeignKey(m => m.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure Message relationships
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany(u => u.SentMessages)
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Receiver)
+                .WithMany(u => u.ReceivedMessages)
+                .HasForeignKey(m => m.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Configure composite key for GroupMembers
             modelBuilder.Entity<GroupMember>()
                 .HasKey(gm => new { gm.GroupId, gm.UserId });
@@ -64,7 +109,9 @@ namespace backend.Data
                 .HasOne(gm => gm.User)
                 .WithMany(u => u.GroupMemberships)
                 .HasForeignKey(gm => gm.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
+
+
         }
     }
 }
