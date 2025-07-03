@@ -14,8 +14,8 @@ namespace backend.DTOs.Auth
         public string? ProfileImageUrl { get; set; }
 
         // Skills and job preferences
-        public HashSet<TechSkill> Skills { get; set; } = new();
-        public HashSet<TechSkill>? WillingToLearnSkills { get; set; } // Only for Students
-        public HashSet<JobTitle> JobTitle { get; set; } = new();
+        public List<Guid> SkillIds { get; set; } = new();
+        public List<Guid>? WillingToLearnSkillIds { get; set; } // Only for Students
+        public Guid? JobTitleId { get; set; } // Current role for Mentors, Looking for role for Students
     }
 }

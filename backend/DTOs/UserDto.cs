@@ -11,8 +11,20 @@ namespace backend.DTOs
         public UserRole Role { get; set; }
         public string? Bio { get; set; }
         public string? ProfileImageUrl { get; set; }
-        public HashSet<TechSkill> Skills { get; set; } = new();
-        public HashSet<TechSkill>? WillingToLearnSkills { get; set; } = new();
-        public HashSet<JobTitle> JobTitle { get; set; } = new();
+        public ICollection<SkillDto> Skills { get; set; } = new List<SkillDto>();
+        public ICollection<SkillDto>? WillingToLearnSkills { get; set; } = new List<SkillDto>();
+        public JobTitleDto? CurrentJobTitle { get; set; }
+    }
+
+    public class SkillDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class JobTitleDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

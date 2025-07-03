@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250629045225_InitialCreateFixed")]
-    partial class InitialCreateFixed
+    [Migration("20250703225957_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -100,6 +100,24 @@ namespace backend.Migrations
                     b.ToTable("GroupMembers");
                 });
 
+            modelBuilder.Entity("backend.Models.JobTitle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("name")
+                        .IsUnique();
+
+                    b.ToTable("JobTitles");
+                });
+
             modelBuilder.Entity("backend.Models.Mentorship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -172,6 +190,24 @@ namespace backend.Migrations
                     b.ToTable("Messages");
                 });
 
+            modelBuilder.Entity("backend.Models.Skill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("name")
+                        .IsUnique();
+
+                    b.ToTable("Skills");
+                });
+
             modelBuilder.Entity("backend.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -189,10 +225,6 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("JobTitle")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -207,20 +239,57 @@ namespace backend.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<string>("Skills")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WillingToLearnSkills")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("backend.Models.UserJobTitle", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobTitleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "JobTitleId");
+
+                    b.HasIndex("JobTitleId");
+
+                    b.ToTable("UserJobTitles");
+                });
+
+            modelBuilder.Entity("backend.Models.UserSkill", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "SkillId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("UserSkills");
+                });
+
+            modelBuilder.Entity("backend.Models.UserWillingToLearnSkill", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "SkillId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("UserWillingToLearnSkills");
                 });
 
             modelBuilder.Entity("backend.Models.Friendship", b =>
@@ -316,6 +385,63 @@ namespace backend.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("backend.Models.UserJobTitle", b =>
+                {
+                    b.HasOne("backend.Models.JobTitle", "JobTitle")
+                        .WithMany("UserJobTitles")
+                        .HasForeignKey("JobTitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.User", "User")
+                        .WithMany("JobTitles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobTitle");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("backend.Models.UserSkill", b =>
+                {
+                    b.HasOne("backend.Models.Skill", "Skill")
+                        .WithMany("UserSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.User", "User")
+                        .WithMany("Skills")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Skill");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("backend.Models.UserWillingToLearnSkill", b =>
+                {
+                    b.HasOne("backend.Models.Skill", "Skill")
+                        .WithMany("UserWillingToLearnSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.User", "User")
+                        .WithMany("WillingToLearnSkills")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Skill");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("backend.Models.Group", b =>
                 {
                     b.Navigation("Members");
@@ -323,11 +449,25 @@ namespace backend.Migrations
                     b.Navigation("Mentorships");
                 });
 
+            modelBuilder.Entity("backend.Models.JobTitle", b =>
+                {
+                    b.Navigation("UserJobTitles");
+                });
+
+            modelBuilder.Entity("backend.Models.Skill", b =>
+                {
+                    b.Navigation("UserSkills");
+
+                    b.Navigation("UserWillingToLearnSkills");
+                });
+
             modelBuilder.Entity("backend.Models.User", b =>
                 {
                     b.Navigation("CreatedGroups");
 
                     b.Navigation("GroupMemberships");
+
+                    b.Navigation("JobTitles");
 
                     b.Navigation("MentorMentorships");
 
@@ -339,7 +479,11 @@ namespace backend.Migrations
 
                     b.Navigation("SentMessages");
 
+                    b.Navigation("Skills");
+
                     b.Navigation("StudentMentorships");
+
+                    b.Navigation("WillingToLearnSkills");
                 });
 #pragma warning restore 612, 618
         }

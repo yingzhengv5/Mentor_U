@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using backend.Data;
 using backend.DTOs;
-using backend.Models.Enums;
-using backend.Utilities;
 
 namespace backend.Controllers
 {
@@ -12,32 +12,39 @@ namespace backend.Controllers
     [Route("api/[controller]")]
     public class EnumController : ControllerBase
     {
-        [HttpGet("job-titles")]
-        public ActionResult<IEnumerable<EnumValueDto>> GetJobTitles()
+        private readonly ApplicationDbContext _context;
+
+        public EnumController(ApplicationDbContext context)
         {
-            var jobTitles = Enum.GetValues<JobTitle>()
-                .Select(title => new EnumValueDto
+            _context = context;
+        }
+
+        [HttpGet("job-titles")]
+        public async Task<ActionResult<IEnumerable<JobTitleDto>>> GetJobTitles()
+        {
+            var jobTitles = await _context.JobTitles
+                .Select(title => new JobTitleDto
                 {
-                    Value = title.ToString(),
-                    DisplayName = title.ToDisplayName()
+                    Id = title.Id,
+                    Name = title.name
                 })
-                .OrderBy(dto => dto.DisplayName)
-                .ToList();
+                .OrderBy(dto => dto.Name)
+                .ToListAsync();
 
             return Ok(jobTitles);
         }
 
         [HttpGet("tech-skills")]
-        public ActionResult<IEnumerable<EnumValueDto>> GetTechSkills()
+        public async Task<ActionResult<IEnumerable<SkillDto>>> GetTechSkills()
         {
-            var skills = Enum.GetValues<TechSkill>()
-                .Select(skill => new EnumValueDto
+            var skills = await _context.Skills
+                .Select(skill => new SkillDto
                 {
-                    Value = skill.ToString(),
-                    DisplayName = skill.ToDisplayName()
+                    Id = skill.Id,
+                    Name = skill.name
                 })
-                .OrderBy(dto => dto.DisplayName)
-                .ToList();
+                .OrderBy(dto => dto.Name)
+                .ToListAsync();
 
             return Ok(skills);
         }

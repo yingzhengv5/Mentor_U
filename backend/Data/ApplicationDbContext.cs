@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using backend.Models;
 using backend.Models.Enums;
-using System.Text.Json;
 
 namespace backend.Data
 {
@@ -18,31 +17,15 @@ namespace backend.Data
         public DbSet<Mentorship> Mentorships { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<JobTitle> JobTitles { get; set; }
+        public DbSet<Skill> Skills { get; set; }
+        public DbSet<UserSkill> UserSkills { get; set; }
+        public DbSet<UserWillingToLearnSkill> UserWillingToLearnSkills { get; set; }
+        public DbSet<UserJobTitle> UserJobTitles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            var options = new JsonSerializerOptions();
-
-            // Configure User's enum collections to be stored as JSON
-            modelBuilder.Entity<User>()
-                .Property(u => u.Skills)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, options),
-                    v => JsonSerializer.Deserialize<HashSet<TechSkill>>(v ?? "[]", options) ?? new HashSet<TechSkill>());
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.WillingToLearnSkills)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, options),
-                    v => JsonSerializer.Deserialize<HashSet<TechSkill>>(v ?? "[]", options) ?? new HashSet<TechSkill>());
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.JobTitle)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, options),
-                    v => JsonSerializer.Deserialize<HashSet<JobTitle>>(v ?? "[]", options) ?? new HashSet<JobTitle>());
 
             // Configure unique email constraint
             modelBuilder.Entity<User>()
@@ -54,7 +37,7 @@ namespace backend.Data
                 .HasOne(f => f.Requester)
                 .WithMany(u => u.RequestedFriendships)
                 .HasForeignKey(f => f.RequesterId)
-                .OnDelete(DeleteBehavior.Restrict); // 使用 Restrict 而不是 Cascade
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Friendship>()
                 .HasOne(f => f.Receiver)
@@ -111,7 +94,27 @@ namespace backend.Data
                 .HasForeignKey(gm => gm.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure composite keys for UserSkill
+            modelBuilder.Entity<UserSkill>()
+                .HasKey(us => new { us.UserId, us.SkillId });
 
+            // Configure composite keys for UserWillingToLearnSkill
+            modelBuilder.Entity<UserWillingToLearnSkill>()
+                .HasKey(us => new { us.UserId, us.SkillId });
+
+            // Configure composite keys for UserJobTitle
+            modelBuilder.Entity<UserJobTitle>()
+                .HasKey(uj => new { uj.UserId, uj.JobTitleId });
+
+            // Configure unique constraint for JobTitle name
+            modelBuilder.Entity<JobTitle>()
+                .HasIndex(j => j.name)
+                .IsUnique();
+
+            // Configure unique constraint for Skill name
+            modelBuilder.Entity<Skill>()
+                .HasIndex(s => s.name)
+                .IsUnique();
         }
     }
 }

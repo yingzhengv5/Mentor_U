@@ -1,19 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 using backend.Models.Enums;
 
 namespace backend.Models
 {
-
 	public class User
 	{
 		public User()
 		{
 			// Initial value
-			Skills = new HashSet<TechSkill>();
-			WillingToLearnSkills = new HashSet<TechSkill>();
-			JobTitle = new HashSet<JobTitle>();
-
+			JobTitles = new List<UserJobTitle>();
+			Skills = new List<UserSkill>();
+			WillingToLearnSkills = new List<UserWillingToLearnSkill>();
 			CreatedGroups = new List<Group>();
 			GroupMemberships = new List<GroupMember>();
 			MentorMentorships = new List<Mentorship>();
@@ -46,12 +43,10 @@ namespace backend.Models
 
 		public string? ProfileImageUrl { get; set; }
 
-		// Using HashSet for better performance with enums
-		public HashSet<TechSkill> Skills { get; set; }
-		public HashSet<TechSkill> WillingToLearnSkills { get; set; }
-		public HashSet<JobTitle> JobTitle { get; set; }
-
 		// Navigation properties
+		public virtual ICollection<UserJobTitle> JobTitles { get; set; }
+		public virtual ICollection<UserSkill> Skills { get; set; }
+		public virtual ICollection<UserWillingToLearnSkill> WillingToLearnSkills { get; set; }
 		public virtual ICollection<Group> CreatedGroups { get; set; }
 		public virtual ICollection<GroupMember> GroupMemberships { get; set; }
 		public virtual ICollection<Mentorship> MentorMentorships { get; set; }
