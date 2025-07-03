@@ -10,11 +10,11 @@ export default function Home() {
           src="/background.png"
           alt="Mentorship Platform"
           fill
-          className="object-cover"
+          // className="object-cover"
           priority
         />
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-50" />
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content */}
         <div className="relative z-10 h-full flex items-center justify-center">
