@@ -3,7 +3,7 @@ import {
   LoginFormData,
   RegisterFormData,
   AuthResponse,
-  EnumValue,
+  EnumDto,
 } from "@/interfaces/auth";
 
 // Create axios instance
@@ -37,13 +37,13 @@ export const authApi = {
     return response.data;
   },
 
-  getJobTitles: async (): Promise<EnumValue[]> => {
-    const response = await api.get<EnumValue[]>("/enum/job-titles");
+  getJobTitles: async (): Promise<EnumDto[]> => {
+    const response = await api.get<EnumDto[]>("/enum/job-titles");
     return response.data;
   },
 
-  getTechSkills: async (): Promise<EnumValue[]> => {
-    const response = await api.get<EnumValue[]>("/enum/tech-skills");
+  getTechSkills: async (): Promise<EnumDto[]> => {
+    const response = await api.get<EnumDto[]>("/enum/tech-skills");
     return response.data;
   },
 

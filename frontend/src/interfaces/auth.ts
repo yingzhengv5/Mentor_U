@@ -3,9 +3,14 @@ export enum UserRole {
   Mentor = 1,
 }
 
-export interface EnumValue {
-  value: string;
-  displayName: string;
+export interface SkillDto {
+  id: string;
+  name: string;
+}
+
+export interface JobTitleDto {
+  id: string;
+  name: string;
 }
 
 // Form data types
@@ -15,9 +20,11 @@ export interface RegisterFormData {
   firstName: string;
   lastName: string;
   role: UserRole;
-  skills: string[];
-  willingToLearnSkills?: string[];
-  jobTitle: string[];
+  bio?: string;
+  profileImageUrl?: string;
+  skillIds: string[];
+  willingToLearnSkillIds?: string[]; // Only for students
+  jobTitleId: string; // Current role for mentors, desired role for students
 }
 
 export interface LoginFormData {
@@ -33,5 +40,16 @@ export interface AuthResponse {
     firstName: string;
     lastName: string;
     role: UserRole;
+    bio?: string;
+    profileImageUrl?: string;
+    skills: SkillDto[];
+    willingToLearnSkills?: SkillDto[];
+    currentJobTitle?: JobTitleDto;
   };
+}
+
+// API response types
+export interface EnumDto {
+  id: string;
+  name: string;
 }
