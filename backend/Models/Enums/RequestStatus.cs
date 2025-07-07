@@ -4,7 +4,7 @@ namespace backend.Models.Enums
 	public enum RequestStatus
 	{
 		Pending,
-		Approved,
+		Accepted,
 		Rejected
 	}
 }
