@@ -88,7 +88,7 @@ export default function MentorRegisterForm() {
           required
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2"
         />
       </div>
 
@@ -106,7 +106,7 @@ export default function MentorRegisterForm() {
           onChange={(e) =>
             setFormData({ ...formData, password: e.target.value })
           }
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2"
         />
       </div>
 
@@ -124,7 +124,7 @@ export default function MentorRegisterForm() {
           onChange={(e) =>
             setFormData({ ...formData, firstName: e.target.value })
           }
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2"
         />
       </div>
 
@@ -142,7 +142,7 @@ export default function MentorRegisterForm() {
           onChange={(e) =>
             setFormData({ ...formData, lastName: e.target.value })
           }
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2"
         />
       </div>
 
@@ -156,7 +156,7 @@ export default function MentorRegisterForm() {
           id="bio"
           value={formData.bio}
           onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2 min-h-[100px]"
           rows={3}
         />
       </div>
@@ -165,18 +165,36 @@ export default function MentorRegisterForm() {
         <label className="block text-sm font-medium text-gray-700">
           Your Skills
         </label>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {skills.map((skill) => (
-            <label key={skill.id} className="inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.skillIds.includes(skill.id)}
-                onChange={() => handleSkillChange(skill.id)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">{skill.name}</span>
-            </label>
-          ))}
+        <select
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2"
+          onChange={(e) => handleSkillChange(e.target.value)}
+          value="">
+          <option value=""></option>
+          {skills
+            .filter((skill) => !formData.skillIds.includes(skill.id))
+            .map((skill) => (
+              <option key={skill.id} value={skill.id}>
+                {skill.name}
+              </option>
+            ))}
+        </select>
+        <div className="mt-1 flex flex-wrap gap-2 mb-3">
+          {formData.skillIds.map((skillId) => {
+            const skill = skills.find((s) => s.id === skillId);
+            return skill ? (
+              <div
+                key={skill.id}
+                className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full flex items-center gap-2">
+                <span>{skill.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleSkillChange(skill.id)}
+                  className="text-indigo-600 hover:text-indigo-800">
+                  ×
+                </button>
+              </div>
+            ) : null;
+          })}
         </div>
       </div>
 
@@ -193,8 +211,8 @@ export default function MentorRegisterForm() {
           onChange={(e) =>
             setFormData({ ...formData, jobTitleId: e.target.value })
           }
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-          <option value="">Select a role</option>
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-2">
+          <option value=""></option>
           {jobTitles.map((title) => (
             <option key={title.id} value={title.id}>
               {title.name}
