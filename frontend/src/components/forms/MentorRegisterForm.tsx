@@ -24,6 +24,7 @@ export default function MentorRegisterForm() {
   const [jobTitles, setJobTitles] = useState<EnumDto[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +46,13 @@ export default function MentorRegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setShowValidation(true);
+
+    // Add validation
+    if (formData.skillIds.length === 0) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -178,6 +186,11 @@ export default function MentorRegisterForm() {
               </option>
             ))}
         </select>
+        {showValidation && formData.skillIds.length === 0 && (
+          <p className="mt-1 text-sm text-red-500">
+            Please select at least one skill
+          </p>
+        )}
         <div className="mt-1 flex flex-wrap gap-2 mb-3">
           {formData.skillIds.map((skillId) => {
             const skill = skills.find((s) => s.id === skillId);
