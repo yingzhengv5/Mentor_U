@@ -13,6 +13,19 @@ export interface JobTitleDto {
   name: string;
 }
 
+export interface UserDto {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  bio?: string;
+  profileImageUrl?: string;
+  skills?: SkillDto[];
+  willingToLearnSkills?: SkillDto[];
+  currentJobTitle?: JobTitleDto;
+}
+
 // Form data types
 export interface RegisterFormData {
   email: string;
@@ -34,18 +47,7 @@ export interface LoginFormData {
 
 export interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: UserRole;
-    bio?: string;
-    profileImageUrl?: string;
-    skills: SkillDto[];
-    willingToLearnSkills?: SkillDto[];
-    currentJobTitle?: JobTitleDto;
-  };
+  user: UserDto;
 }
 
 // API response types
