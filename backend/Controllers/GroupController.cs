@@ -13,7 +13,6 @@ namespace backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class GroupController : ControllerBase
     {
         private readonly GroupService _groupService;
@@ -26,12 +25,23 @@ namespace backend.Controllers
         }
 
         /// <summary>
+        /// Gets all available groups
+        /// </summary>
+        [HttpGet("all")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<GroupDto>>> GetAllGroups()
+        {
+            return await _groupService.GetAllGroupsAsync();
+        }
+
+        /// <summary>
         /// Creates a new group
         /// </summary>
         /// <remarks>
         /// Only students can create groups. The creator automatically becomes a member.
         /// </remarks>
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<GroupDto>> CreateGroup(CreateGroupDto dto)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -45,6 +55,7 @@ namespace backend.Controllers
         /// Gets a specific group by ID
         /// </summary>
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<GroupDto>> GetGroup(Guid id)
         {
             return await _groupService.GetGroupDtoAsync(id);
@@ -54,6 +65,7 @@ namespace backend.Controllers
         /// Gets all groups the current user is a member of
         /// </summary>
         [HttpGet("my")]
+        [Authorize]
         public async Task<ActionResult<List<GroupDto>>> GetMyGroups()
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -66,6 +78,7 @@ namespace backend.Controllers
         /// Requests to join a group
         /// </summary>
         [HttpPost("{id}/join")]
+        [Authorize]
         public async Task<ActionResult<GroupMemberDto>> JoinGroup(Guid id)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -81,6 +94,7 @@ namespace backend.Controllers
         /// Only the group creator can respond to join requests
         /// </remarks>
         [HttpPut("{id}/members/{userId}")]
+        [Authorize]
         public async Task<ActionResult<GroupMemberDto>> RespondToJoinRequest(
             Guid id,
             Guid userId,
@@ -103,6 +117,7 @@ namespace backend.Controllers
         /// Allows a user to leave a group they are a member of
         /// </summary>
         [HttpPost("{id}/leave")]
+        [Authorize]
         public async Task<ActionResult> LeaveGroup(Guid id)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -116,6 +131,7 @@ namespace backend.Controllers
         /// Allows a creator to delete their group
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<ActionResult> DeleteGroup(Guid id)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value

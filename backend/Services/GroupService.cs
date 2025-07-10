@@ -272,5 +272,49 @@ namespace backend.Services
 
             await _context.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// Gets all available groups with their members and creator information
+        /// </summary>
+        /// <returns>List of all groups</returns>
+        public async Task<List<GroupDto>> GetAllGroupsAsync()
+        {
+            var groups = await _context.Groups
+                .Include(g => g.Creator)
+                .Include(g => g.Members)
+                    .ThenInclude(m => m.User)
+                .OrderByDescending(g => g.CreatedAt)
+                .ToListAsync();
+
+            return groups.Select(group => new GroupDto
+            {
+                Id = group.Id,
+                Name = group.Name,
+                Description = group.Description,
+                CreatorId = group.CreatorId,
+                Creator = new UserDto
+                {
+                    Id = group.Creator.Id,
+                    FirstName = group.Creator.FirstName,
+                    LastName = group.Creator.LastName,
+                    Email = group.Creator.Email,
+                    Role = group.Creator.Role
+                },
+                Members = group.Members.Select(m => new GroupMemberDto
+                {
+                    UserId = m.UserId,
+                    User = new UserDto
+                    {
+                        Id = m.User.Id,
+                        FirstName = m.User.FirstName,
+                        LastName = m.User.LastName,
+                        Email = m.User.Email,
+                        Role = m.User.Role
+                    },
+                    Status = m.Status
+                }).ToList(),
+                CreatedAt = group.CreatedAt
+            }).ToList();
+        }
     }
 }
