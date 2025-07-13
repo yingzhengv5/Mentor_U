@@ -8,12 +8,12 @@ import { GroupDto, RequestStatus } from "@/interfaces/group";
 
 export default function MyGroups() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [groups, setGroups] = useState<GroupDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.push("/auth/login");
       return;
     }
@@ -29,8 +29,10 @@ export default function MyGroups() {
       }
     };
 
-    fetchMyGroups();
-  }, [user, router]);
+    if (!authLoading && user) {
+      fetchMyGroups();
+    }
+  }, [user, router, authLoading]);
 
   const handleLeaveGroup = async (groupId: string) => {
     if (!confirm("Are you sure you want to leave this group?")) {
@@ -64,12 +66,16 @@ export default function MyGroups() {
     }
   };
 
-  if (isLoading || !user) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-24 pb-8 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // This should never happen because we redirect in useEffect
   }
 
   return (
@@ -109,7 +115,6 @@ export default function MyGroups() {
                     </span>
                   </div>
                   <div className="flex justify-end items-center space-x-2">
-                    {/* Group Chat button - to be implemented later */}
                     <button
                       className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-md hover:bg-indigo-200 transition-colors"
                       onClick={() =>

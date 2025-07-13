@@ -13,6 +13,7 @@ import { AuthResponse } from "@/interfaces/auth";
 interface AuthContextType {
   user: AuthResponse["user"] | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (response: AuthResponse) => void;
   logout: () => void;
 }
@@ -21,6 +22,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
+  isLoading: true,
   login: () => {},
   logout: () => {},
 });
@@ -38,6 +40,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing auth on mount
   useEffect(() => {
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
     }
+    setIsLoading(false);
   }, []);
 
   const login = (response: AuthResponse) => {
@@ -55,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("user", JSON.stringify(response.user));
     setUser(response.user);
     setIsAuthenticated(true);
+    setIsLoading(false);
   };
 
   const logout = () => {
@@ -62,10 +67,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
+    setIsLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

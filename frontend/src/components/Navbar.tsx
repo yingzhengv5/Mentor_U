@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGroup } from "@/contexts/GroupContext";
 import { UserRole } from "@/interfaces/auth";
@@ -9,12 +10,12 @@ import CreateGroupForm from "./forms/CreateGroupForm";
 import { groupsApi } from "@/api/groups";
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const { totalPendingRequests } = useGroup();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +24,21 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleCreateGroup = async (name: string, description: string) => {
+    try {
+      await groupsApi.createGroup({ name, description });
+      setIsCreateGroupOpen(false);
+      router.push("/my-groups");
+    } catch (err) {
+      console.error("Error creating group:", err);
+      alert(err instanceof Error ? err.message : "Failed to create group");
+    }
+  };
+
+  if (authLoading) {
+    return null; // or a loading spinner if you prefer
+  }
 
   return (
     <nav
@@ -162,21 +178,10 @@ export default function Navbar() {
       {/* Create Group Modal */}
       <CreateGroupForm
         isOpen={isCreateGroupOpen}
-        onClose={() => setIsCreateGroupOpen(false)}
-        onSubmit={async (name: string, description: string) => {
-          try {
-            await groupsApi.createGroup({ name, description });
-            setIsCreateGroupOpen(false);
-            window.location.reload();
-          } catch (err) {
-            console.error("Error creating group:", err);
-            if (err instanceof Error) {
-              setError(err.message);
-            } else {
-              setError("Failed to create group");
-            }
-          }
+        onClose={() => {
+          setIsCreateGroupOpen(false);
         }}
+        onSubmit={handleCreateGroup}
       />
     </nav>
   );
