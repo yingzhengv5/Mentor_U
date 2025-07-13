@@ -59,33 +59,43 @@ export default function Dashboard() {
       );
     }
 
-    if (status === RequestStatus.Pending) {
-      return (
-        <button
-          className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-md cursor-not-allowed"
-          disabled>
-          Request Pending
-        </button>
-      );
-    }
+    switch (status) {
+      case RequestStatus.Pending:
+        return (
+          <button
+            className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-md cursor-not-allowed"
+            disabled>
+            Request Pending
+          </button>
+        );
 
-    if (status === RequestStatus.Accepted) {
-      return (
-        <button
-          className="bg-green-100 text-green-800 px-4 py-2 rounded-md cursor-not-allowed"
-          disabled>
-          Joined
-        </button>
-      );
-    }
+      case RequestStatus.Accepted:
+        return (
+          <button
+            className="bg-green-100 text-green-800 px-4 py-2 rounded-md cursor-not-allowed"
+            disabled>
+            Joined
+          </button>
+        );
 
-    return (
-      <button
-        onClick={() => handleJoinGroup(group.id)}
-        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-        Join Group
-      </button>
-    );
+      case RequestStatus.Rejected:
+        return (
+          <button
+            className="bg-red-100 text-red-800 px-4 py-2 rounded-md cursor-not-allowed"
+            disabled>
+            Request Rejected
+          </button>
+        );
+
+      default:
+        return (
+          <button
+            onClick={() => handleJoinGroup(group.id)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
+            Join Group
+          </button>
+        );
+    }
   };
 
   if (isLoading) {

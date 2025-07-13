@@ -17,6 +17,7 @@ export interface GroupMemberDto {
   status: RequestStatus;
   groupId?: string; // Optional for backward compatibility
   groupName?: string; // Optional for backward compatibility
+  creatorName?: string; // Optional for showing group creator's name in notifications
 }
 
 export interface GroupDto {

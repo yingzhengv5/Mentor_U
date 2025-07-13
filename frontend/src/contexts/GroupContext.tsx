@@ -16,6 +16,7 @@ interface GroupContextType {
   groups: GroupDto[];
   myGroups: GroupDto[];
   pendingRequests: GroupMemberDto[];
+  myRequests: GroupMemberDto[]; // Add this to track user's own requests
   isLoading: boolean;
   joinGroup: (groupId: string) => Promise<void>;
   approveRequest: (groupId: string, userId: string) => Promise<void>;
@@ -32,6 +33,7 @@ const GroupContext = createContext<GroupContextType>({
   groups: [],
   myGroups: [],
   pendingRequests: [],
+  myRequests: [], // Add this
   isLoading: true,
   joinGroup: async () => {},
   approveRequest: async () => {},
@@ -54,6 +56,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
   const [groups, setGroups] = useState<GroupDto[]>([]);
   const [myGroups, setMyGroups] = useState<GroupDto[]>([]);
   const [pendingRequests, setPendingRequests] = useState<GroupMemberDto[]>([]);
+  const [myRequests, setMyRequests] = useState<GroupMemberDto[]>([]); // Add this
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshGroups = useCallback(async () => {
@@ -66,8 +69,8 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
       setGroups(allGroups);
       setMyGroups(userGroups);
 
-      // Get pending requests for groups where user is creator
       if (user) {
+        // Get pending requests for groups where user is creator
         const createdGroups = allGroups.filter(
           (group) => group.creatorId === user.id
         );
@@ -81,6 +84,19 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
             }))
         );
         setPendingRequests(requests);
+
+        // Get all requests made by the current user
+        const userRequests = allGroups.flatMap((group) =>
+          group.members
+            .filter((member) => member.userId === user.id)
+            .map((member) => ({
+              ...member,
+              groupId: group.id,
+              groupName: group.name,
+              creatorName: `${group.creator.firstName} ${group.creator.lastName}`,
+            }))
+        );
+        setMyRequests(userRequests);
       }
 
       setIsLoading(false);
@@ -102,29 +118,49 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const response = await groupsApi.joinGroup(groupId);
+        // Find the group
+        const group = groups.find((g) => g.id === groupId);
+        if (!group) {
+          throw new Error("Group not found");
+        }
 
-        // Update the groups state immediately
+        const newMember = {
+          userId: user.id,
+          user: user,
+          status: RequestStatus.Pending,
+          groupId: group.id,
+          groupName: group.name,
+          creatorName: `${group.creator.firstName} ${group.creator.lastName}`,
+        };
+
+        // Immediately update the local states
         setGroups((prevGroups) =>
-          prevGroups.map((group) => {
-            if (group.id === groupId) {
+          prevGroups.map((g) => {
+            if (g.id === groupId) {
               return {
-                ...group,
-                members: [...group.members, response],
+                ...g,
+                members: [...g.members, newMember],
               };
             }
-            return group;
+            return g;
           })
         );
 
-        // Then refresh all data
+        setMyRequests((prev) => [...prev, newMember]);
+
+        // Make the API call
+        await groupsApi.joinGroup(groupId);
+
+        // Refresh all data to ensure consistency with server
         await refreshGroups();
       } catch (error) {
         console.error("Error joining group:", error);
+        // If the API call fails, refresh the groups to restore the correct state
+        await refreshGroups();
         throw error;
       }
     },
-    [user, refreshGroups]
+    [user, groups, refreshGroups]
   );
 
   const approveRequest = useCallback(
@@ -161,14 +197,24 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
       if (!group) return { status: null, isCreator: false };
 
       const isCreator = group.creatorId === user.id;
-      const member = group.members.find((m) => m.userId === user.id);
 
+      // First check in myRequests for the most up-to-date status
+      const myRequest = myRequests.find((r) => r.groupId === groupId);
+      if (myRequest) {
+        return {
+          status: myRequest.status,
+          isCreator,
+        };
+      }
+
+      // Fallback to checking group members
+      const member = group.members.find((m) => m.userId === user.id);
       return {
         status: member?.status || null,
         isCreator,
       };
     },
-    [user, groups]
+    [user, groups, myRequests] // Add myRequests to dependencies
   );
 
   const totalPendingRequests = pendingRequests.length;
@@ -179,6 +225,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
         groups,
         myGroups,
         pendingRequests,
+        myRequests, // Add this
         isLoading,
         joinGroup,
         approveRequest,
