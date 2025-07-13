@@ -75,7 +75,7 @@ export default function CreateGroupForm({
                   <div className="mb-4">
                     <label
                       htmlFor="name"
-                      className="block text-sm font-medium text-gray-700">
+                      className="block text-sm font-medium text-gray-700 py-2">
                       Group Name
                     </label>
                     <input
@@ -83,7 +83,7 @@ export default function CreateGroupForm({
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="pl-2 py-2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       placeholder="Enter group name"
                     />
                   </div>
@@ -99,7 +99,7 @@ export default function CreateGroupForm({
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="pl-2 pt-2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       placeholder="Enter group description"
                     />
                   </div>

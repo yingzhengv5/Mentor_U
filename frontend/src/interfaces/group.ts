@@ -1,9 +1,9 @@
 import { UserDto } from "./auth";
 
 export enum RequestStatus {
-  Pending = "Pending",
-  Accepted = "Accepted",
-  Rejected = "Rejected",
+  Pending = 0,
+  Accepted = 1,
+  Rejected = 2,
 }
 
 export interface CreateGroupDto {
@@ -15,6 +15,8 @@ export interface GroupMemberDto {
   userId: string;
   user: UserDto;
   status: RequestStatus;
+  groupId?: string; // Optional for backward compatibility
+  groupName?: string; // Optional for backward compatibility
 }
 
 export interface GroupDto {

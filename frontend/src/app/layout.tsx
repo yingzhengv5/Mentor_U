@@ -1,7 +1,17 @@
-import "@/app/globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { GroupProvider } from "@/contexts/GroupContext";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { AuthProvider } from "@/contexts/AuthContext";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Mentor U",
+  description: "Find your mentor or mentee",
+};
 
 export default function RootLayout({
   children,
@@ -9,15 +19,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full">
+    <html lang="en">
+      <body className={inter.className}>
         <AuthProvider>
-          {/* Main container */}
-          <div className="min-h-screen flex flex-col">
+          <GroupProvider>
             <Navbar />
-            <main className="flex-grow">{children}</main>
+            {children}
             <Footer />
-          </div>
+          </GroupProvider>
         </AuthProvider>
       </body>
     </html>

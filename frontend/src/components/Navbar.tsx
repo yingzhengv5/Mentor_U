@@ -1,172 +1,159 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect, Fragment } from "react";
-import { Menu, Transition } from "@headlessui/react";
+import { useGroup } from "@/contexts/GroupContext";
 import { UserRole } from "@/interfaces/auth";
-import { groupsApi } from "@/api/groups";
 import CreateGroupForm from "./forms/CreateGroupForm";
-import NotificationDropdown from "./NotificationDropdown";
+import { groupsApi } from "@/api/groups";
 
 export default function Navbar() {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { user, logout } = useAuth();
+  const { totalPendingRequests } = useGroup();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Function to handle scroll events
     const handleScroll = () => {
-      const scrolled = window.scrollY > 20;
-      setIsScrolled(scrolled);
+      setIsScrolled(window.scrollY > 0);
     };
-
-    // Add scroll listener when component mounts
     window.addEventListener("scroll", handleScroll);
-
-    // Clean up the event listener when component unmounts
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Handle group creation
-  const handleCreateGroup = async (name: string, description: string) => {
-    try {
-      await groupsApi.createGroup({ name, description });
-      setIsCreateGroupOpen(false);
-      // Show success message
-      alert("Group created successfully!");
-    } catch (error) {
-      console.error("Error creating group:", error);
-      alert("Failed to create group. Please try again.");
-    }
-  };
-
-  // Handle join request responses
-  const handleAcceptJoinRequest = async (requestId: string) => {
-    try {
-      // TODO: Implement API call to accept join request
-      console.log("Accepting join request:", requestId);
-    } catch (error) {
-      console.error("Error accepting join request:", error);
-    }
-  };
-
-  const handleRejectJoinRequest = async (requestId: string) => {
-    try {
-      // TODO: Implement API call to reject join request
-      console.log("Rejecting join request:", requestId);
-    } catch (error) {
-      console.error("Error rejecting join request:", error);
-    }
-  };
 
   return (
     <nav
-      className={`
-        fixed top-0 left-0 right-0 z-50
-        transition-all duration-300 ease-in-out
-        ${isScrolled ? "bg-white shadow-lg" : "bg-transparent"}
-      `}>
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        isScrolled ? "bg-white shadow-md" : "bg-transparent"
+      }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo/Home link */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-xl font-bold text-indigo-600">
-              MentorU
+        <div className="flex justify-between h-16 items-center">
+          {/* Left side - Logo and Navigation */}
+          <div className="flex items-center space-x-4">
+            <Link href="/" className="text-2xl font-bold text-indigo-600">
+              Mentor U
             </Link>
+
+            {/* Navigation Links */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Link
+                href="/dashboard"
+                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                Lobby
+              </Link>
+              {user?.role === UserRole.Student && (
+                <button
+                  onClick={() => setIsCreateGroupOpen(true)}
+                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Create Group
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Navigation links */}
+          {/* Right side - Auth buttons or User menu */}
           <div className="flex items-center space-x-4">
-            {isAuthenticated && user ? (
+            {user ? (
               <>
-                {/* Create Group Button - Only show for students */}
-                {user.role === UserRole.Student && (
+                {/* Notifications Icon */}
+                <Link
+                  href="/requests"
+                  className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <span className="sr-only">View requests</span>
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  {totalPendingRequests > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs text-white">
+                      {totalPendingRequests}
+                    </span>
+                  )}
+                </Link>
+
+                <div className="relative">
                   <button
-                    onClick={() => setIsCreateGroupOpen(true)}
-                    className="mr-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Create Group
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-indigo-600">
+                    <span className="text-sm font-medium">
+                      {user.firstName}
+                    </span>
+                    <svg
+                      className={`h-5 w-5 transition-transform ${
+                        isProfileOpen ? "transform rotate-180" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
                   </button>
-                )}
 
-                {/* Notifications */}
-                <div className="mr-4">
-                  <NotificationDropdown
-                    onAccept={handleAcceptJoinRequest}
-                    onReject={handleRejectJoinRequest}
-                  />
-                </div>
-
-                {/* Profile Dropdown */}
-                <Menu as="div" className="relative ml-3">
-                  <Menu.Button className="flex items-center text-sm rounded-full hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-                      {user.firstName[0]}
+                  {/* Dropdown menu */}
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div
+                        className="py-1"
+                        role="menu"
+                        aria-orientation="vertical"
+                        aria-labelledby="user-menu">
+                        <Link
+                          href="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                          onClick={() => setIsProfileOpen(false)}>
+                          Profile
+                        </Link>
+                        <Link
+                          href="/my-groups"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                          onClick={() => setIsProfileOpen(false)}>
+                          My Groups
+                        </Link>
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem">
+                          Sign out
+                        </button>
+                      </div>
                     </div>
-                  </Menu.Button>
-
-                  <Transition
-                    as={Fragment}
-                    enter="transition ease-out duration-100"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95">
-                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            href="/profile"
-                            className={`${
-                              active ? "bg-gray-100" : ""
-                            } block px-4 py-2 text-sm text-gray-700`}>
-                            Profile
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            href="/my-groups"
-                            className={`${
-                              active ? "bg-gray-100" : ""
-                            } block px-4 py-2 text-sm text-gray-700`}>
-                            My Groups
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={logout}
-                            className={`${
-                              active ? "bg-gray-100" : ""
-                            } block w-full text-left px-4 py-2 text-sm text-gray-700`}>
-                            Sign out
-                          </button>
-                        )}
-                      </Menu.Item>
-                    </Menu.Items>
-                  </Transition>
-                </Menu>
+                  )}
+                </div>
               </>
             ) : (
-              <>
+              <div className="flex items-center space-x-4">
                 <Link
                   href="/auth/login"
-                  className="bg-gray-200 text-gray-700 px-3 py-2 hover:bg-gray-300 rounded-md transition-colors">
-                  Login
+                  className="text-gray-700 hover:text-indigo-600">
+                  Sign in
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-                  Register
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                  Sign up
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -176,7 +163,20 @@ export default function Navbar() {
       <CreateGroupForm
         isOpen={isCreateGroupOpen}
         onClose={() => setIsCreateGroupOpen(false)}
-        onSubmit={handleCreateGroup}
+        onSubmit={async (name: string, description: string) => {
+          try {
+            await groupsApi.createGroup({ name, description });
+            setIsCreateGroupOpen(false);
+            window.location.reload();
+          } catch (err) {
+            console.error("Error creating group:", err);
+            if (err instanceof Error) {
+              setError(err.message);
+            } else {
+              setError("Failed to create group");
+            }
+          }
+        }}
       />
     </nav>
   );
