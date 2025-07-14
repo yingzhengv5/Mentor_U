@@ -14,7 +14,7 @@ export default function Home() {
           priority
         />
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content */}
         <div className="relative z-10 h-full flex items-center justify-center">

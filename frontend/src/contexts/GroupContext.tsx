@@ -16,7 +16,7 @@ interface GroupContextType {
   groups: GroupDto[];
   myGroups: GroupDto[];
   pendingRequests: GroupMemberDto[];
-  myRequests: GroupMemberDto[]; // Add this to track user's own requests
+  myRequests: GroupMemberDto[]; // Track user's own requests
   isLoading: boolean;
   joinGroup: (groupId: string) => Promise<void>;
   approveRequest: (groupId: string, userId: string) => Promise<void>;
@@ -33,7 +33,7 @@ const GroupContext = createContext<GroupContextType>({
   groups: [],
   myGroups: [],
   pendingRequests: [],
-  myRequests: [], // Add this
+  myRequests: [],
   isLoading: true,
   joinGroup: async () => {},
   approveRequest: async () => {},
@@ -225,7 +225,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
         groups,
         myGroups,
         pendingRequests,
-        myRequests, // Add this
+        myRequests,
         isLoading,
         joinGroup,
         approveRequest,
