@@ -9,7 +9,6 @@ namespace backend.Models
 		public Group()
 		{
 			Members = new List<GroupMember>();
-			Mentorships = new List<Mentorship>();
 		}
 		[Key]
 		public Guid Id { get; set; }
@@ -29,6 +28,5 @@ namespace backend.Models
 		[ForeignKey("CreatorId")]
 		public virtual required User Creator { get; set; }
 		public virtual ICollection<GroupMember> Members { get; set; }
-		public virtual ICollection<Mentorship> Mentorships { get; set; }
 	}
 }

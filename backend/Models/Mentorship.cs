@@ -14,8 +14,6 @@ namespace backend.Models
 
         public Guid? StudentId { get; set; }
 
-        public Guid? GroupId { get; set; }
-
         [Required]
         public MentorshipDuration Duration { get; set; }
 
@@ -27,8 +25,6 @@ namespace backend.Models
         [Required]
         public MentorshipStatus Status { get; set; }
 
-        public string? ProjectDescription { get; set; }
-
         [Required]
         public DateTime CreatedAt { get; set; }
 
@@ -38,8 +34,5 @@ namespace backend.Models
 
         [ForeignKey("StudentId")]
         public virtual User? Student { get; set; }
-
-        [ForeignKey("GroupId")]
-        public virtual Group? Group { get; set; }
     }
 }

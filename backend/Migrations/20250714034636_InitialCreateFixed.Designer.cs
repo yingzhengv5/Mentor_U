@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250703225957_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250714034636_InitialCreateFixed")]
+    partial class InitialCreateFixed
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,14 +133,8 @@ namespace backend.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("MentorId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ProjectDescription")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -152,8 +146,6 @@ namespace backend.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
 
                     b.HasIndex("MentorId");
 
@@ -343,11 +335,6 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.Mentorship", b =>
                 {
-                    b.HasOne("backend.Models.Group", "Group")
-                        .WithMany("Mentorships")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("backend.Models.User", "Mentor")
                         .WithMany("MentorMentorships")
                         .HasForeignKey("MentorId")
@@ -358,8 +345,6 @@ namespace backend.Migrations
                         .WithMany("StudentMentorships")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Group");
 
                     b.Navigation("Mentor");
 
@@ -445,8 +430,6 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.Group", b =>
                 {
                     b.Navigation("Members");
-
-                    b.Navigation("Mentorships");
                 });
 
             modelBuilder.Entity("backend.Models.JobTitle", b =>

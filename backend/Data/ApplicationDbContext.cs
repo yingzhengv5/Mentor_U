@@ -58,12 +58,6 @@ namespace backend.Data
                 .HasForeignKey(m => m.StudentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Mentorship>()
-                .HasOne(m => m.Group)
-                .WithMany(g => g.Mentorships)
-                .HasForeignKey(m => m.GroupId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             // Configure Message relationships
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.Sender)
