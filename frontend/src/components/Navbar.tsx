@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGroup } from "@/contexts/GroupContext";
+import { useMentorship } from "@/contexts/MentorshipContext";
 import { UserRole } from "@/interfaces/auth";
 import CreateGroupForm from "./forms/CreateGroupForm";
 import { groupsApi } from "@/api/groups";
@@ -12,10 +13,13 @@ import { groupsApi } from "@/api/groups";
 export default function Navbar() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
-  const { totalPendingRequests } = useGroup();
+  const { totalPendingRequests: groupPendingRequests } = useGroup();
+  const { totalPendingRequests: mentorshipPendingRequests } = useMentorship();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+
+  const totalPendingRequests = groupPendingRequests + mentorshipPendingRequests;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -142,6 +146,13 @@ export default function Navbar() {
                           role="menuitem"
                           onClick={() => setIsProfileOpen(false)}>
                           My Groups
+                        </Link>
+                        <Link
+                          href="/mentorships"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                          onClick={() => setIsProfileOpen(false)}>
+                          My Mentorships
                         </Link>
                         <button
                           onClick={() => {

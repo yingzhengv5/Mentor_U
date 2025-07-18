@@ -66,5 +66,15 @@ namespace backend.Controllers
             var mentorship = await _mentorshipService.RespondToMentorshipRequestAsync(mentorId, mentorshipId, accept);
             return Ok(mentorship);
         }
+
+        [HttpGet("current")]
+        [Authorize]
+        public async Task<ActionResult<List<MentorshipResponseDto>>> GetCurrentMentorships()
+        {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? throw new UnauthorizedException("User not authenticated"));
+            var mentorships = await _mentorshipService.GetCurrentMentorshipsAsync(userId);
+            return Ok(mentorships);
+        }
     }
 }

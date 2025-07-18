@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GroupProvider } from "@/contexts/GroupContext";
+import { MentorshipProvider } from "@/contexts/MentorshipContext";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
@@ -23,9 +24,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <GroupProvider>
-            <Navbar />
-            {children}
-            <Footer />
+            <MentorshipProvider>
+              <Navbar />
+              {children}
+              <Footer />
+            </MentorshipProvider>
           </GroupProvider>
         </AuthProvider>
       </body>

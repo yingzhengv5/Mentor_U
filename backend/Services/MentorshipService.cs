@@ -122,7 +122,6 @@ namespace backend.Services
             await _context.SaveChangesAsync();
             return await GetMentorshipResponseDto(mentorship.Id);
         }
-
         // Get AI-based mentor recommendations for a student
         public async Task<List<MentorRecommendationDto>> GetMentorRecommendationsAsync(Guid studentId)
         {
@@ -265,6 +264,7 @@ namespace backend.Services
                 ?? "Unable to generate recommendation at this time.";
         }
 
+
         // Helper class for Gemini API response
         private class GeminiResponse
         {
@@ -284,6 +284,50 @@ namespace backend.Services
         private class Part
         {
             public string? text { get; set; }
+        }
+
+        public async Task<List<MentorshipResponseDto>> GetCurrentMentorshipsAsync(Guid userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.MentorMentorships)
+                    .ThenInclude(m => m.Student)
+                .Include(u => u.StudentMentorships)
+                    .ThenInclude(m => m.Mentor)
+                .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new NotFoundException("User not found");
+
+            var mentorships = user.Role == UserRole.Mentor
+                ? user.MentorMentorships
+                : user.StudentMentorships;
+
+            return mentorships.Select(m => new MentorshipResponseDto
+            {
+                Id = m.Id,
+                Mentor = new UserDto
+                {
+                    Id = m.Mentor.Id,
+                    Email = m.Mentor.Email,
+                    FirstName = m.Mentor.FirstName,
+                    LastName = m.Mentor.LastName,
+                    Role = m.Mentor.Role,
+                    Bio = m.Mentor.Bio,
+                    ProfileImageUrl = m.Mentor.ProfileImageUrl
+                },
+                Student = new UserDto
+                {
+                    Id = m.Student!.Id,
+                    Email = m.Student.Email,
+                    FirstName = m.Student.FirstName,
+                    LastName = m.Student.LastName,
+                    Role = m.Student.Role,
+                    Bio = m.Student.Bio,
+                    ProfileImageUrl = m.Student.ProfileImageUrl
+                },
+                Status = m.Status,
+                Duration = m.Duration,
+                StartDate = m.StartDate,
+                EndDate = m.EndDate
+            }).ToList();
         }
     }
 }
