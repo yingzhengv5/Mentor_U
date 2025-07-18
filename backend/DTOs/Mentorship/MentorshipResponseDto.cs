@@ -7,7 +7,7 @@ namespace backend.DTOs.Mentorship
         public Guid Id { get; set; }
         public UserDto Mentor { get; set; } = null!;
         public UserDto Student { get; set; } = null!;
-        public MentorshipStatus status { get; set; }
+        public MentorshipStatus Status { get; set; }
         public MentorshipDuration Duration { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

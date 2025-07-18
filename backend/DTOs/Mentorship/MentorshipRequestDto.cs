@@ -4,8 +4,13 @@ namespace backend.DTOs.Mentorship
 {
     public class MentorshipRequestDto
     {
-        public Guid MentorID { get; set; }
+        // ID of the mentor being requested
+        public Guid MentorId { get; set; }
+
+        // Optional message from student to mentor
         public string? Message { get; set; }
+
+        // Desired duration of mentorship
         public MentorshipDuration Duration { get; set; }
     }
 }
