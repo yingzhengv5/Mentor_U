@@ -1,15 +1,14 @@
 "use client";
 
-import { useMentorship } from "@/contexts/MentorshipContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { MentorshipStatus, MentorshipDuration } from "@/interfaces/mentorship";
+import { useMentorship } from "@/contexts/MentorshipContext";
 import { UserRole } from "@/interfaces/auth";
-import { useState } from "react";
+import { MentorshipStatus, Mentorship } from "@/interfaces/mentorship";
+import { mentorshipApi } from "@/api/mentorship";
 
 export default function MentorshipsPage() {
   const { user } = useAuth();
-  const { mentorships, isLoading, respondToRequest } = useMentorship();
-  const [updateLoading, setUpdateLoading] = useState<string | null>(null);
+  const { mentorships, isLoading, refreshMentorships } = useMentorship();
 
   if (isLoading) {
     return (
@@ -19,281 +18,184 @@ export default function MentorshipsPage() {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const getStatusColor = (status: MentorshipStatus) => {
-    switch (status) {
-      case MentorshipStatus.Active:
-        return "bg-green-100 text-green-800";
-      case MentorshipStatus.Pending:
-        return "bg-yellow-100 text-yellow-800";
-      case MentorshipStatus.Completed:
-        return "bg-gray-100 text-gray-800";
-      case MentorshipStatus.Cancelled:
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getDurationText = (duration: MentorshipDuration) => {
-    switch (duration) {
-      case MentorshipDuration.OneMonth:
-        return "1 Month";
-      case MentorshipDuration.TwoMonths:
-        return "2 Months";
-      case MentorshipDuration.ThreeMonths:
-        return "3 Months";
-      default:
-        return duration;
-    }
-  };
-
-  const handleStatusUpdate = async (mentorshipId: string, accept: boolean) => {
+  const handleMentorshipAction = async (
+    mentorshipId: string,
+    action: "complete" | "cancel"
+  ) => {
     try {
-      setUpdateLoading(mentorshipId);
-      await respondToRequest(mentorshipId, accept);
-      setUpdateLoading(null);
-    } catch (error) {
-      console.error("Error updating mentorship status:", error);
-      alert("Failed to update mentorship status. Please try again.");
-      setUpdateLoading(null);
+      if (action === "complete") {
+        await mentorshipApi.completeMentorship(mentorshipId);
+      } else {
+        await mentorshipApi.cancelMentorship(mentorshipId);
+      }
+      await refreshMentorships();
+    } catch (err) {
+      console.error(`Error ${action}ing mentorship:`, err);
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert(`Failed to ${action} mentorship. Please try again.`);
+      }
     }
   };
 
-  // Filter mentorships based on status
-  const activeMentorships = mentorships.filter(
-    (m) => m.status === MentorshipStatus.Active
-  );
-  const pendingMentorships = mentorships.filter(
-    (m) => m.status === MentorshipStatus.Pending
-  );
-  const completedMentorships = mentorships.filter(
-    (m) =>
-      m.status === MentorshipStatus.Completed ||
-      m.status === MentorshipStatus.Cancelled
-  );
+  const getMentorshipStatusColor = (status: MentorshipStatus) => {
+    const colors = {
+      [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800",
+      [MentorshipStatus.Active]: "bg-green-100 text-green-800",
+      [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600",
+      [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800",
+    };
+    return colors[status];
+  };
+
+  const getMentorshipStatusText = (status: MentorshipStatus) => {
+    const statusText = {
+      [MentorshipStatus.Pending]: "Pending",
+      [MentorshipStatus.Active]: "Active",
+      [MentorshipStatus.Completed]: "Completed",
+      [MentorshipStatus.Cancelled]: "Cancelled",
+    };
+    return statusText[status];
+  };
+
+  const renderMentorshipCard = (mentorship: Mentorship) => {
+    const isStudent = user?.role === UserRole.Student;
+    const partner = isStudent ? mentorship.mentor : mentorship.student;
+
+    return (
+      <div
+        key={mentorship.id}
+        className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Card Header - Status Banner */}
+        <div
+          className={`px-6 py-2 ${getMentorshipStatusColor(
+            mentorship.status
+          )}`}>
+          <span className="text-sm font-medium">
+            {getMentorshipStatusText(mentorship.status)}
+          </span>
+        </div>
+
+        {/* Card Body */}
+        <div className="p-6">
+          {/* Partner Info Section */}
+          <div className="flex items-start space-x-4 mb-6">
+            <div className="relative w-16 h-16 flex-shrink-0">
+              <img
+                src={partner.profileImageUrl || "/default-avatar.png"}
+                alt={`${partner.firstName} ${partner.lastName}`}
+                className="rounded-full w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {isStudent ? "Mentor" : "Student"}: {partner.firstName}{" "}
+                {partner.lastName}
+              </h3>
+              <p className="text-sm text-gray-500">{partner.email}</p>
+              {isStudent && mentorship.mentor.currentJobTitle && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {mentorship.mentor.currentJobTitle.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Mentorship Details */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Duration</p>
+              <p className="text-sm text-gray-900">
+                {mentorship.duration === 0
+                  ? "1 Month"
+                  : mentorship.duration === 1
+                  ? "2 Months"
+                  : "3 Months"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Start Date</p>
+              <p className="text-sm text-gray-900">
+                {new Date(mentorship.startDate).toLocaleDateString()}
+              </p>
+            </div>
+            {mentorship.endDate && (
+              <div>
+                <p className="text-sm font-medium text-gray-500">End Date</p>
+                <p className="text-sm text-gray-900">
+                  {new Date(mentorship.endDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Skills Section - Only show for mentor */}
+          {isStudent &&
+            mentorship.mentor.skills &&
+            mentorship.mentor.skills.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-medium text-gray-500 mb-2">
+                  Mentor Skills
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {mentorship.mentor.skills.map((skill) => (
+                    <span
+                      key={skill.id}
+                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                      {skill.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Message Section */}
+          {mentorship.message && (
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-500 mb-2">Message</p>
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                {mentorship.message}
+              </p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          {mentorship.status === MentorshipStatus.Active && (
+            <div className="flex space-x-3">
+              <button
+                onClick={() =>
+                  handleMentorshipAction(mentorship.id, "complete")
+                }
+                className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors">
+                Complete
+              </button>
+              <button
+                onClick={() => handleMentorshipAction(mentorship.id, "cancel")}
+                className="flex-1 px-4 py-2 bg-red-100 text-red-600 text-sm font-medium rounded-md hover:bg-red-200 transition-colors">
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          My Mentorships
-        </h1>
+    <div className="min-h-screen bg-gray-50 pt-24 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">My Mentorships</h1>
+        </div>
 
-        {mentorships.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-500">
-              {user?.role === UserRole.Student
-                ? "You haven't requested any mentorships yet."
-                : "You haven't received any mentorship requests yet."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Pending Mentorships Section */}
-            {pendingMentorships.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Pending Requests</h2>
-                <div className="grid gap-4">
-                  {pendingMentorships.map((mentorship) => (
-                    <div
-                      key={mentorship.id}
-                      className="bg-white rounded-lg shadow p-6">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {user?.role === UserRole.Student
-                              ? `Mentor: ${mentorship.mentor.firstName} ${mentorship.mentor.lastName}`
-                              : `Student: ${mentorship.student.firstName} ${mentorship.student.lastName}`}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            {mentorship.mentor.email}
-                          </p>
-                        </div>
-                        <span
-                          className={`mt-2 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            mentorship.status
-                          )}`}>
-                          {mentorship.status}
-                        </span>
-                      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mentorships.map(renderMentorshipCard)}
+        </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
-                        <div>
-                          <p className="text-gray-600">Duration</p>
-                          <p className="font-medium">
-                            {getDurationText(mentorship.duration)}
-                          </p>
-                        </div>
-                        {mentorship.message && (
-                          <div className="sm:col-span-2">
-                            <p className="text-gray-600">Message</p>
-                            <p className="font-medium">{mentorship.message}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action buttons for mentor */}
-                      {user?.role === UserRole.Mentor &&
-                        mentorship.status === MentorshipStatus.Pending && (
-                          <div className="flex gap-2 mt-4">
-                            <button
-                              onClick={() =>
-                                handleStatusUpdate(mentorship.id, true)
-                              }
-                              disabled={updateLoading === mentorship.id}
-                              className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50">
-                              Accept
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleStatusUpdate(mentorship.id, false)
-                              }
-                              disabled={updateLoading === mentorship.id}
-                              className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50">
-                              Decline
-                            </button>
-                          </div>
-                        )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Active Mentorships Section */}
-            {activeMentorships.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">
-                  Active Mentorships
-                </h2>
-                <div className="grid gap-4">
-                  {activeMentorships.map((mentorship) => (
-                    <div
-                      key={mentorship.id}
-                      className="bg-white rounded-lg shadow p-6">
-                      {/* ... Similar content as above ... */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {user?.role === UserRole.Student
-                              ? `Mentor: ${mentorship.mentor.firstName} ${mentorship.mentor.lastName}`
-                              : `Student: ${mentorship.student.firstName} ${mentorship.student.lastName}`}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            {mentorship.mentor.email}
-                          </p>
-                        </div>
-                        <span
-                          className={`mt-2 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            mentorship.status
-                          )}`}>
-                          {mentorship.status}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Duration</p>
-                          <p className="font-medium">
-                            {getDurationText(mentorship.duration)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Start Date</p>
-                          <p className="font-medium">
-                            {formatDate(mentorship.startDate)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">End Date</p>
-                          <p className="font-medium">
-                            {formatDate(mentorship.endDate)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 mt-4">
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(mentorship.id, false)
-                          }
-                          disabled={updateLoading === mentorship.id}
-                          className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50">
-                          Complete
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(mentorship.id, false)
-                          }
-                          disabled={updateLoading === mentorship.id}
-                          className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Completed/Cancelled Mentorships Section */}
-            {completedMentorships.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Past Mentorships</h2>
-                <div className="grid gap-4">
-                  {completedMentorships.map((mentorship) => (
-                    <div
-                      key={mentorship.id}
-                      className="bg-white rounded-lg shadow p-6">
-                      {/* ... Similar content as above ... */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {user?.role === UserRole.Student
-                              ? `Mentor: ${mentorship.mentor.firstName} ${mentorship.mentor.lastName}`
-                              : `Student: ${mentorship.student.firstName} ${mentorship.student.lastName}`}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            {mentorship.mentor.email}
-                          </p>
-                        </div>
-                        <span
-                          className={`mt-2 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            mentorship.status
-                          )}`}>
-                          {mentorship.status}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Duration</p>
-                          <p className="font-medium">
-                            {getDurationText(mentorship.duration)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Start Date</p>
-                          <p className="font-medium">
-                            {formatDate(mentorship.startDate)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">End Date</p>
-                          <p className="font-medium">
-                            {formatDate(mentorship.endDate)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {mentorships.length === 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <p className="text-gray-500">No mentorships found</p>
           </div>
         )}
       </div>

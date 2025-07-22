@@ -125,18 +125,25 @@ namespace backend.Services
         public async Task<MentorshipResponseDto> CancelMentorshipAsync(Guid userId, Guid mentorshipId)
         {
             var mentorship = await _context.Mentorships
-            .Include(m => m.Mentor)
-            .Include(m => m.Student)
-            .FirstOrDefaultAsync(m => m.Id == mentorshipId)
-            ?? throw new NotFoundException("Mentorship not found");
+                .Include(m => m.Mentor)
+                .Include(m => m.Student)
+                .FirstOrDefaultAsync(m => m.Id == mentorshipId)
+                ?? throw new NotFoundException("Mentorship not found");
 
-            // Verify user is either mentor or student
+            // Verify user is either mentor or student of this mentorship
             if (mentorship.MentorId != userId && mentorship.StudentId != userId)
             {
-                throw new UnauthorizedException("You can only cancel your own mentorships");
+                throw new UnauthorizedException("You can only cancel mentorships you are part of");
+            }
+
+            // Only pending or active mentorships can be cancelled
+            if (mentorship.Status != MentorshipStatus.Pending && mentorship.Status != MentorshipStatus.Active)
+            {
+                throw new BadRequestException($"Cannot cancel mentorship in {mentorship.Status} status");
             }
 
             mentorship.Status = MentorshipStatus.Cancelled;
+            mentorship.EndDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return await GetMentorshipResponseDto(mentorship.Id);
@@ -425,6 +432,33 @@ namespace backend.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<MentorshipResponseDto> CompleteMentorshipAsync(Guid userId, Guid mentorshipId)
+        {
+            var mentorship = await _context.Mentorships
+                .Include(m => m.Mentor)
+                .Include(m => m.Student)
+                .FirstOrDefaultAsync(m => m.Id == mentorshipId)
+                ?? throw new NotFoundException("Mentorship not found");
+
+            // Verify user is either mentor or student of this mentorship
+            if (mentorship.MentorId != userId && mentorship.StudentId != userId)
+            {
+                throw new UnauthorizedException("You can only complete mentorships you are part of");
+            }
+
+            // Only active mentorships can be completed
+            if (mentorship.Status != MentorshipStatus.Active)
+            {
+                throw new BadRequestException($"Cannot complete mentorship in {mentorship.Status} status");
+            }
+
+            mentorship.Status = MentorshipStatus.Completed;
+            mentorship.EndDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return await GetMentorshipResponseDto(mentorship.Id);
         }
     }
 }

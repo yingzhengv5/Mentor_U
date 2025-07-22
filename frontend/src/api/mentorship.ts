@@ -9,6 +9,33 @@ import {
 
 import { UserDto } from "@/interfaces/auth";
 
+const handleApiError = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    console.error("Axios error details:", {
+      status: error.response?.status,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      config: error.config,
+    });
+
+    if (error.response?.status === 400) {
+      throw new Error(`Bad request: ${JSON.stringify(error.response.data)}`);
+    }
+    if (error.response?.status === 401) {
+      throw new Error("Unauthorized: Please log in again");
+    }
+    if (error.response?.status === 403) {
+      throw new Error(
+        "Forbidden: You don't have permission to perform this action"
+      );
+    }
+    if (error.response?.status === 500) {
+      throw new Error("Server error: Please try again later");
+    }
+  }
+  throw error;
+};
+
 export const mentorshipApi = {
   // Get all mentors (public endpoint)
   getAllMentors: async (): Promise<UserDto[]> => {
@@ -67,7 +94,7 @@ export const mentorshipApi = {
     try {
       const response = await api.post<Mentorship>(
         `/mentorship/${mentorshipId}/respond`,
-        accept, // 直接发送 boolean 值，而不是包装在对象中
+        accept,
         {
           headers: {
             "Content-Type": "application/json",
@@ -76,28 +103,35 @@ export const mentorshipApi = {
       );
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Axios error details:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers,
-          config: error.config,
-        });
-        if (error.response?.status === 400) {
-          throw new Error(
-            `Bad request: ${JSON.stringify(error.response.data)}`
-          );
-        }
-        if (error.response?.status === 401) {
-          throw new Error("Unauthorized: Please log in again");
-        }
-      }
+      handleApiError(error);
       throw error;
     }
   },
 
-  cancelMentorship: async (mentorshipId: string): Promise<void> => {
-    await api.post(`/mentorship/${mentorshipId}/cancel`);
+  // Cancel mentorship
+  cancelMentorship: async (mentorshipId: string): Promise<Mentorship> => {
+    try {
+      const response = await api.post<Mentorship>(
+        `/mentorship/${mentorshipId}/cancel`
+      );
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  },
+
+  // Complete mentorship
+  completeMentorship: async (mentorshipId: string): Promise<Mentorship> => {
+    try {
+      const response = await api.post<Mentorship>(
+        `/mentorship/${mentorshipId}/complete`
+      );
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
   },
 
   getPendingRequests: async (): Promise<Mentorship[]> => {

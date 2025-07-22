@@ -1,5 +1,5 @@
 import { UserRole } from "./auth";
-import { UserDto } from "./auth";
+import { UserDto, SkillDto, JobTitleDto } from "./auth";
 
 export enum MentorshipStatus {
   Pending = 0,
@@ -30,8 +30,8 @@ export interface Mentorship {
     role: UserRole;
     bio?: string;
     profileImageUrl?: string;
-    skills: string[];
-    currentJobTitle?: string;
+    skills: SkillDto[];
+    currentJobTitle?: JobTitleDto;
   };
   student: {
     id: string;

@@ -84,8 +84,19 @@ namespace backend.Controllers
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
             throw new UnauthorizedException("User not authenticated"));
 
-            var mentorship = await _mentorshipService.CancelMentorshipAsync(userId, mentorshipId);
-            return Ok(mentorship);
+            try
+            {
+                var mentorship = await _mentorshipService.CancelMentorshipAsync(userId, mentorshipId);
+                return Ok(mentorship);
+            }
+            catch (UnauthorizedException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // Get pending requests for mentor
@@ -98,6 +109,28 @@ namespace backend.Controllers
 
             var requests = await _mentorshipService.GetPendingRequestsAsync(mentorId);
             return Ok(requests);
+        }
+
+        [HttpPost("{mentorshipId}/complete")]
+        [Authorize]
+        public async Task<ActionResult<MentorshipResponseDto>> CompleteMentorship(Guid mentorshipId)
+        {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+            throw new UnauthorizedException("User not authenticated"));
+
+            try
+            {
+                var mentorship = await _mentorshipService.CompleteMentorshipAsync(userId, mentorshipId);
+                return Ok(mentorship);
+            }
+            catch (UnauthorizedException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

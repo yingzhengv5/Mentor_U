@@ -38,6 +38,7 @@ interface MentorshipContextType {
     hasActiveMentorship: boolean;
   };
   cancelMentorship: (mentorId: string) => Promise<void>;
+  completeMentorship: (mentorId: string) => Promise<void>;
 }
 
 const MentorshipContext = createContext<MentorshipContextType | undefined>(
@@ -189,9 +190,53 @@ export function MentorshipProvider({
   const cancelMentorship = async (mentorshipId: string) => {
     try {
       await mentorshipApi.cancelMentorship(mentorshipId);
-      await refreshMentorships();
+      // 立即更新本地状态
+      setMentorships((prev) =>
+        prev.map((m) =>
+          m.id === mentorshipId
+            ? {
+                ...m,
+                status: MentorshipStatus.Cancelled,
+              }
+            : m
+        )
+      );
+      // 刷新数据确保一致性
+      await loadMentorships();
     } catch (error) {
       console.error("Error cancelling mentorship:", error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to cancel mentorship. Please try again.");
+      }
+      throw error;
+    }
+  };
+
+  const completeMentorship = async (mentorshipId: string) => {
+    try {
+      await mentorshipApi.completeMentorship(mentorshipId);
+      // 立即更新本地状态
+      setMentorships((prev) =>
+        prev.map((m) =>
+          m.id === mentorshipId
+            ? {
+                ...m,
+                status: MentorshipStatus.Completed,
+              }
+            : m
+        )
+      );
+      // 刷新数据确保一致性
+      await loadMentorships();
+    } catch (error) {
+      console.error("Error completing mentorship:", error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to complete mentorship. Please try again.");
+      }
       throw error;
     }
   };
@@ -236,6 +281,7 @@ export function MentorshipProvider({
         refreshMentorships,
         getMentorshipStatus,
         cancelMentorship,
+        completeMentorship,
       }}>
       {children}
     </MentorshipContext.Provider>
