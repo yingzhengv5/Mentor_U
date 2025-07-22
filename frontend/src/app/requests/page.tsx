@@ -12,7 +12,14 @@ import { Mentorship } from "@/interfaces/mentorship";
 
 export default function RequestsPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { myRequests: groupRequests, isLoading, refreshGroups } = useGroup();
+  const {
+    pendingRequests: groupPendingRequests,
+    myRequests: groupRequests,
+    approveRequest: approveGroupRequest,
+    rejectRequest: rejectGroupRequest,
+    isLoading,
+    refreshGroups,
+  } = useGroup();
   const {
     myRequests: mentorshipRequests,
     respondToRequest: respondToMentorshipRequest,
@@ -40,6 +47,26 @@ export default function RequestsPage() {
     const intervalId = setInterval(pollRequests, 2000);
     return () => clearInterval(intervalId);
   }, [user, router, authLoading, pollRequests]);
+
+  const handleApprove = async (groupId: string, userId: string) => {
+    try {
+      await approveGroupRequest(groupId, userId);
+      pollRequests();
+    } catch (err) {
+      console.error("Error approving request:", err);
+      alert("Failed to approve request. Please try again.");
+    }
+  };
+
+  const handleReject = async (groupId: string, userId: string) => {
+    try {
+      await rejectGroupRequest(groupId, userId);
+      pollRequests();
+    } catch (err) {
+      console.error("Error rejecting request:", err);
+      alert("Failed to reject request. Please try again.");
+    }
+  };
 
   const handleMentorshipResponse = async (
     mentorshipId: string,
@@ -136,6 +163,87 @@ export default function RequestsPage() {
     return statusText[status];
   };
 
+  const renderGroupRequests = () => {
+    // 如果用户是 group creator，显示待处理的加入请求
+    if (groupPendingRequests.length > 0) {
+      return (
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-3">
+            Pending Group Join Requests
+          </h3>
+          {groupPendingRequests.map((request) => (
+            <div
+              key={`pending-${request.groupId}-${request.userId}`}
+              className="mb-4 bg-white rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-medium text-gray-900">
+                    {request.user.firstName} {request.user.lastName}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    wants to join {request.groupName}
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() =>
+                      handleReject(request.groupId!, request.userId)
+                    }
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                    Reject
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleApprove(request.groupId!, request.userId)
+                    }
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                    Approve
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // 显示用户自己的加入请求
+    return (
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-3">
+          My Group Join Requests
+        </h3>
+        {groupRequests.map((request) => (
+          <div
+            key={`my-group-${request.groupId}`}
+            className="mb-4 bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-base font-medium text-gray-900">
+                  {request.groupName}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Created by {request.creatorName}
+                </p>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  request.status
+                )}`}>
+                {getStatusText(request.status)}
+              </span>
+            </div>
+          </div>
+        ))}
+        {groupRequests.length === 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p className="text-gray-500">No group requests</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -148,33 +256,7 @@ export default function RequestsPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Group Requests
           </h2>
-          {groupRequests.map((request) => (
-            <div
-              key={`group-${request.groupId}`}
-              className="mb-4 bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-base font-medium text-gray-900">
-                    {request.groupName}
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    Created by {request.creatorName}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    request.status
-                  )}`}>
-                  {getStatusText(request.status)}
-                </span>
-              </div>
-            </div>
-          ))}
-          {groupRequests.length === 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-500">No group requests</p>
-            </div>
-          )}
+          {renderGroupRequests()}
         </div>
 
         {/* Mentorship Requests Section */}

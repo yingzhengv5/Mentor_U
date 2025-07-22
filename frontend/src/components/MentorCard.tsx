@@ -31,7 +31,7 @@ export function MentorCard({
 
     const statusText = {
       [MentorshipStatus.Pending]: "Request Pending",
-      [MentorshipStatus.Active]: "Active Mentorship",
+      [MentorshipStatus.Active]: "Request Mentorship",
       [MentorshipStatus.Completed]: "Mentorship Completed",
       [MentorshipStatus.Cancelled]: "Request Cancelled",
     };
@@ -59,14 +59,14 @@ export function MentorCard({
     if (disabled || hasActiveMentorship || status !== null) {
       const buttonStyles = {
         [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800", // 0
-        [MentorshipStatus.Active]: "bg-green-100 text-green-800", // 1
+        [MentorshipStatus.Active]: "bg-gray-100 text-gray-600", // 1
         [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600", // 2
         [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800", // 3
       };
 
       const statusText = {
         [MentorshipStatus.Pending]: "Request Pending",
-        [MentorshipStatus.Active]: "Active Mentorship",
+        [MentorshipStatus.Active]: "Request Mentorship",
         [MentorshipStatus.Completed]: "Mentorship Completed",
         [MentorshipStatus.Cancelled]: "Request Cancelled",
       };

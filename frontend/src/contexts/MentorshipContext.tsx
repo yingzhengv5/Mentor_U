@@ -114,36 +114,52 @@ export function MentorshipProvider({
         duration,
       });
 
-      // Immediately update local state
+      // 立即更新本地状态，但不要取消其他请求
       setMentorships((prev) => [...prev, response]);
 
-      // Show success notification
-      alert("Mentorship request sent successfully!");
-
-      // Refresh to ensure consistency
+      // 刷新数据确保一致性
       await loadMentorships();
+
+      alert("Mentorship request sent successfully!");
     } catch (error) {
       console.error("Error requesting mentorship:", error);
       throw error;
     }
   };
 
+  // 当一个 mentorship 变为 active 时，取消其他请求
   const respondToRequest = async (mentorshipId: string, accept: boolean) => {
     try {
       await mentorshipApi.respondToRequest(mentorshipId, accept);
+
       // 立即更新本地状态
       setMentorships((prev) =>
-        prev.map((m) =>
-          m.id === mentorshipId
-            ? {
+        prev.map((m) => {
+          if (m.id === mentorshipId) {
+            return {
+              ...m,
+              status: accept
+                ? MentorshipStatus.Active
+                : MentorshipStatus.Cancelled,
+            };
+          }
+          // 如果接受了请求，将该学生的其他请求都设为取消
+          if (accept) {
+            const acceptedRequest = prev.find((r) => r.id === mentorshipId);
+            if (
+              acceptedRequest &&
+              m.student.id === acceptedRequest.student.id
+            ) {
+              return {
                 ...m,
-                status: accept
-                  ? MentorshipStatus.Active
-                  : MentorshipStatus.Cancelled,
-              }
-            : m
-        )
+                status: MentorshipStatus.Cancelled,
+              };
+            }
+          }
+          return m;
+        })
       );
+
       // 刷新数据确保一致性
       await loadMentorships();
     } catch (error) {
@@ -243,11 +259,10 @@ export function MentorshipProvider({
 
   // Filter mentorships based on user role and status
   const pendingRequests = useMemo(() => {
-    if (!user) return [];
-    return mentorships.filter((m) =>
-      user.role === UserRole.Mentor
-        ? m.mentor.id === user.id && m.status === MentorshipStatus.Pending
-        : m.student.id === user.id && m.status === MentorshipStatus.Pending
+    if (!user || user.role !== UserRole.Mentor) return [];
+    // 只有 Mentor 才应该看到 pending requests
+    return mentorships.filter(
+      (m) => m.mentor.id === user.id && m.status === MentorshipStatus.Pending
     );
   }, [mentorships, user]);
 
@@ -260,9 +275,9 @@ export function MentorshipProvider({
     );
   }, [mentorships, user]);
 
-  // Calculate total pending requests
+  // Calculate total pending requests (only for mentors)
   const totalPendingRequests = useMemo(() => {
-    if (!user) return 0;
+    if (!user || user.role !== UserRole.Mentor) return 0;
     return pendingRequests.length;
   }, [user, pendingRequests]);
 

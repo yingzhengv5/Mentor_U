@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +19,18 @@ export default function Navbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
 
-  const totalPendingRequests = groupPendingRequests + mentorshipPendingRequests;
+  // 根据用户角色计算总的待处理请求数
+  const totalPendingRequests = useMemo(() => {
+    if (!user) return 0;
+
+    if (user.role === UserRole.Mentor) {
+      // Mentor 可以看到 group 和 mentorship 的请求总和
+      return groupPendingRequests + mentorshipPendingRequests;
+    } else {
+      // Student 只能看到作为 group creator 的请求数量
+      return groupPendingRequests;
+    }
+  }, [user, groupPendingRequests, mentorshipPendingRequests]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,29 +89,33 @@ export default function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                {/* Notifications Icon */}
-                <Link
-                  href="/requests"
-                  className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <span className="sr-only">View requests</span>
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  {totalPendingRequests > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs text-white">
-                      {totalPendingRequests}
-                    </span>
-                  )}
-                </Link>
+                {user && (
+                  <>
+                    {/* Notifications Icon */}
+                    <Link
+                      href="/requests"
+                      className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <span className="sr-only">View requests</span>
+                      <svg
+                        className="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                        />
+                      </svg>
+                      {totalPendingRequests > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs text-white">
+                          {totalPendingRequests}
+                        </span>
+                      )}
+                    </Link>
+                  </>
+                )}
 
                 <div className="relative">
                   <button

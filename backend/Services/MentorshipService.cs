@@ -201,15 +201,37 @@ namespace backend.Services
             if (mentorship.Status != MentorshipStatus.Pending)
                 throw new BadRequestException("Mentorship is not in pending status");
 
-            mentorship.Status = accept ? MentorshipStatus.Active : MentorshipStatus.Cancelled;
-            if (accept)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                mentorship.StartDate = DateTime.UtcNow;
-                mentorship.EndDate = CalculateEndDate(DateTime.UtcNow, mentorship.Duration);
-            }
+                mentorship.Status = accept ? MentorshipStatus.Active : MentorshipStatus.Cancelled;
 
-            await _context.SaveChangesAsync();
-            return await GetMentorshipResponseDto(mentorship.Id);
+                if (accept)
+                {
+                    // 将该学生的其他请求都设为取消
+                    var otherRequests = await _context.Mentorships
+                        .Where(m => m.StudentId == mentorship.StudentId && m.Id != mentorship.Id)
+                        .ToListAsync();
+
+                    foreach (var request in otherRequests)
+                    {
+                        request.Status = MentorshipStatus.Cancelled;
+                    }
+
+                    mentorship.StartDate = DateTime.UtcNow;
+                    mentorship.EndDate = CalculateEndDate(DateTime.UtcNow, mentorship.Duration);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return await GetMentorshipResponseDto(mentorship.Id);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
         // Get AI-based mentor recommendations for a student
         public async Task<List<MentorRecommendationDto>> GetMentorRecommendationsAsync(Guid studentId)
