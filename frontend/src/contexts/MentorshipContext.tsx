@@ -20,10 +20,10 @@ import { UserRole, UserDto } from "@/interfaces/auth";
 
 interface MentorshipContextType {
   mentors: UserDto[];
-  mentorships: Mentorship[];
+  mentorships: Mentorship[]; // Requests waiting for mentor's response
   recommendations: MentorRecommendation[];
   pendingRequests: Mentorship[];
-  myRequests: Mentorship[];
+  myRequests: Mentorship[]; // Student's sent requests or mentor's received requests
   totalPendingRequests: number;
   isLoading: boolean;
   requestMentorship: (
@@ -33,7 +33,11 @@ interface MentorshipContextType {
   ) => Promise<void>;
   respondToRequest: (mentorshipId: string, accept: boolean) => Promise<void>;
   refreshMentorships: () => Promise<void>;
-  getMentorshipStatus: (mentorId: string) => MentorshipStatus | undefined;
+  getMentorshipStatus: (mentorId: string) => {
+    status: MentorshipStatus | null;
+    hasActiveMentorship: boolean;
+  };
+  cancelMentorship: (mentorId: string) => Promise<void>;
 }
 
 const MentorshipContext = createContext<MentorshipContextType | undefined>(
@@ -126,9 +130,28 @@ export function MentorshipProvider({
   const respondToRequest = async (mentorshipId: string, accept: boolean) => {
     try {
       await mentorshipApi.respondToRequest(mentorshipId, accept);
+      // 立即更新本地状态
+      setMentorships((prev) =>
+        prev.map((m) =>
+          m.id === mentorshipId
+            ? {
+                ...m,
+                status: accept
+                  ? MentorshipStatus.Active
+                  : MentorshipStatus.Cancelled,
+              }
+            : m
+        )
+      );
+      // 刷新数据确保一致性
       await loadMentorships();
     } catch (error) {
       console.error("Error responding to request:", error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Failed to respond to request. Please try again.");
+      }
       throw error;
     }
   };
@@ -137,26 +160,49 @@ export function MentorshipProvider({
     await loadMentorships();
   };
 
-  // Get mentorship status for a specific mentor
+  // Get mentorship status to determine the button state for each mentor card
   const getMentorshipStatus = useCallback(
     (mentorId: string) => {
-      if (!user) return undefined;
+      if (!user) {
+        return { status: null, hasActiveMentorship: false };
+      }
 
+      // Check if user has any active mentorship
+      const hasActiveMentorship = mentorships.some(
+        (m) => m.status === MentorshipStatus.Active
+      );
+
+      // Find specific mentorship with this mentor
       const mentorship = mentorships.find(
         (m) => m.mentor.id === mentorId && m.student.id === user.id
       );
-      return mentorship?.status;
+
+      return {
+        status: mentorship?.status || null,
+        hasActiveMentorship,
+      };
     },
-    [mentorships, user]
+    [user, mentorships]
   );
+
+  // Add function to handle cancellation
+  const cancelMentorship = async (mentorshipId: string) => {
+    try {
+      await mentorshipApi.cancelMentorship(mentorshipId);
+      await refreshMentorships();
+    } catch (error) {
+      console.error("Error cancelling mentorship:", error);
+      throw error;
+    }
+  };
 
   // Filter mentorships based on user role and status
   const pendingRequests = useMemo(() => {
     if (!user) return [];
-    return mentorships.filter(
-      (m) =>
-        m.status === MentorshipStatus.Pending &&
-        (user.role === UserRole.Mentor ? m.mentor.id === user.id : false)
+    return mentorships.filter((m) =>
+      user.role === UserRole.Mentor
+        ? m.mentor.id === user.id && m.status === MentorshipStatus.Pending
+        : m.student.id === user.id && m.status === MentorshipStatus.Pending
     );
   }, [mentorships, user]);
 
@@ -172,18 +218,8 @@ export function MentorshipProvider({
   // Calculate total pending requests
   const totalPendingRequests = useMemo(() => {
     if (!user) return 0;
-    if (user.role === UserRole.Mentor) {
-      // For mentors: count pending requests they need to respond to
-      return mentorships.filter(
-        (m) => m.status === MentorshipStatus.Pending && m.mentor.id === user.id
-      ).length;
-    } else {
-      // For students: count their own pending requests
-      return mentorships.filter(
-        (m) => m.status === MentorshipStatus.Pending && m.student.id === user.id
-      ).length;
-    }
-  }, [mentorships, user]);
+    return pendingRequests.length;
+  }, [user, pendingRequests]);
 
   return (
     <MentorshipContext.Provider
@@ -199,6 +235,7 @@ export function MentorshipProvider({
         respondToRequest,
         refreshMentorships,
         getMentorshipStatus,
+        cancelMentorship,
       }}>
       {children}
     </MentorshipContext.Provider>

@@ -300,7 +300,7 @@ export default function Dashboard() {
                       }
                       if (
                         hasActiveMentorship ||
-                        getMentorshipStatus(mentor.id)
+                        getMentorshipStatus(mentor.id).status !== null
                       ) {
                         return;
                       }
@@ -344,7 +344,7 @@ export default function Dashboard() {
                           onRequestMentorship={() => {
                             if (
                               hasActiveMentorship ||
-                              getMentorshipStatus(rec.mentor.id)
+                              getMentorshipStatus(rec.mentor.id).status !== null
                             ) {
                               return;
                             }
@@ -357,9 +357,6 @@ export default function Dashboard() {
                             <div className="font-medium">
                               Match Score: {Math.round(rec.matchScore * 100)}%
                             </div>
-                            <p className="mt-1 line-clamp-2">
-                              {rec.recommendationReason}
-                            </p>
                           </div>
                         </div>
                       </div>

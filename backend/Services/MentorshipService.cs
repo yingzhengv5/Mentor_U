@@ -81,24 +81,106 @@ namespace backend.Services
             if (student.StudentMentorships.Any(m => m.Status == MentorshipStatus.Active))
                 throw new BadRequestException("Student is currently in an active mentorship");
 
-            var mentorship = new Mentorship
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                MentorId = mentor.Id,
-                StudentId = student.Id,
-                Mentor = mentor,
-                Student = student,
-                Status = MentorshipStatus.Pending,
-                Duration = request.Duration,
-                StartDate = DateTime.UtcNow,
-                EndDate = CalculateEndDate(DateTime.UtcNow, request.Duration),
-                CreatedAt = DateTime.UtcNow
-            };
+                // Cancel any existing pending requests
+                var existingPendingRequests = await _context.Mentorships
+                    .Where(m => m.StudentId == studentId && m.Status == MentorshipStatus.Pending)
+                    .ToListAsync();
 
-            _context.Mentorships.Add(mentorship);
+                foreach (var pendingRequest in existingPendingRequests)
+                {
+                    pendingRequest.Status = MentorshipStatus.Cancelled;
+                }
+
+                // Create new mentorship request
+                var mentorship = new Mentorship
+                {
+                    MentorId = request.MentorId,
+                    StudentId = studentId,
+                    Status = MentorshipStatus.Pending,
+                    Duration = request.Duration,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = CalculateEndDate(DateTime.UtcNow, request.Duration),
+                    CreatedAt = DateTime.UtcNow,
+                    // Add these required properties
+                    Mentor = mentor,
+                    Student = student
+                };
+
+                _context.Mentorships.Add(mentorship);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return await GetMentorshipResponseDto(mentorship.Id);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<MentorshipResponseDto> CancelMentorshipAsync(Guid userId, Guid mentorshipId)
+        {
+            var mentorship = await _context.Mentorships
+            .Include(m => m.Mentor)
+            .Include(m => m.Student)
+            .FirstOrDefaultAsync(m => m.Id == mentorshipId)
+            ?? throw new NotFoundException("Mentorship not found");
+
+            // Verify user is either mentor or student
+            if (mentorship.MentorId != userId && mentorship.StudentId != userId)
+            {
+                throw new UnauthorizedException("You can only cancel your own mentorships");
+            }
+
+            mentorship.Status = MentorshipStatus.Cancelled;
             await _context.SaveChangesAsync();
 
             return await GetMentorshipResponseDto(mentorship.Id);
         }
+
+        public async Task<List<MentorshipResponseDto>> GetPendingRequestsAsync(Guid mentorId)
+        {
+            var requests = await _context.Mentorships
+                .Include(m => m.Mentor)
+                .Include(m => m.Student)
+                .Where(m => m.MentorId == mentorId && m.Status == MentorshipStatus.Pending)
+                .ToListAsync();
+
+            return requests.Select(m => new MentorshipResponseDto
+            {
+                Id = m.Id,
+                Mentor = new UserDto
+                {
+                    Id = m.Mentor.Id,
+                    FirstName = m.Mentor.FirstName,
+                    LastName = m.Mentor.LastName,
+                    Email = m.Mentor.Email,
+                    Role = m.Mentor.Role,
+                    Bio = m.Mentor.Bio,
+                    ProfileImageUrl = m.Mentor.ProfileImageUrl
+                },
+                Student = new UserDto
+                {
+                    Id = m.Student!.Id,
+                    FirstName = m.Student.FirstName,
+                    LastName = m.Student.LastName,
+                    Email = m.Student.Email,
+                    Role = m.Student.Role,
+                    Bio = m.Student.Bio,
+                    ProfileImageUrl = m.Student.ProfileImageUrl
+                },
+                Status = m.Status,
+                Duration = m.Duration,
+                StartDate = m.StartDate,
+                EndDate = m.EndDate,
+                Message = m.Message
+            }).ToList();
+        }
+
 
         // Accept or reject mentorship request
         public async Task<MentorshipResponseDto> RespondToMentorshipRequestAsync(Guid mentorId, Guid mentorshipId, bool accept)
@@ -328,6 +410,21 @@ namespace backend.Services
                 StartDate = m.StartDate,
                 EndDate = m.EndDate
             }).ToList();
+        }
+
+        // Add this method to be called by a background job
+        public async Task CheckAndUpdateMentorshipStatusAsync()
+        {
+            var activeMentorships = await _context.Mentorships
+                .Where(m => m.Status == MentorshipStatus.Active && m.EndDate <= DateTime.UtcNow)
+                .ToListAsync();
+
+            foreach (var mentorship in activeMentorships)
+            {
+                mentorship.Status = MentorshipStatus.Completed;
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

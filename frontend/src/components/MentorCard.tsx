@@ -7,59 +7,84 @@ import Image from "next/image";
 interface MentorCardProps {
   mentor: UserDto;
   onRequestMentorship: () => void;
+  currentUserRole?: UserRole;
   disabled?: boolean;
   disabledReason?: string;
-  currentUserRole?: UserRole;
-  mentorshipStatus?: MentorshipStatus;
+  mentorshipStatus: {
+    status: MentorshipStatus | null;
+    hasActiveMentorship: boolean;
+  };
 }
 
 export function MentorCard({
   mentor,
   onRequestMentorship,
+  currentUserRole,
   disabled = false,
   disabledReason,
-  currentUserRole,
   mentorshipStatus,
 }: MentorCardProps) {
+  const { status, hasActiveMentorship } = mentorshipStatus;
+
+  const getStatusText = (status: MentorshipStatus | null) => {
+    if (!status) return "";
+
+    const statusText = {
+      [MentorshipStatus.Pending]: "Request Pending",
+      [MentorshipStatus.Active]: "Active Mentorship",
+      [MentorshipStatus.Completed]: "Mentorship Completed",
+      [MentorshipStatus.Cancelled]: "Request Cancelled",
+    };
+
+    return statusText[status];
+  };
+
   const getStatusButton = () => {
+    // 如果已经存在任何状态的请求，禁用按钮
+    if (mentorshipStatus.status !== null) {
+      return (
+        <button
+          disabled
+          className="mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm bg-gray-100 text-gray-500">
+          {getStatusText(mentorshipStatus.status)}
+        </button>
+      );
+    }
+
     // If user is a mentor, don't show the button
     if (currentUserRole === UserRole.Mentor) {
       return null;
     }
 
-    // If there's a mentorship status, show it
-    if (mentorshipStatus) {
+    if (disabled || hasActiveMentorship || status !== null) {
       const buttonStyles = {
-        [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800",
-        [MentorshipStatus.Active]: "bg-green-100 text-green-800",
-        [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600",
-        [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800",
+        [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800", // 0
+        [MentorshipStatus.Active]: "bg-green-100 text-green-800", // 1
+        [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600", // 2
+        [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800", // 3
       };
 
       const statusText = {
         [MentorshipStatus.Pending]: "Request Pending",
         [MentorshipStatus.Active]: "Active Mentorship",
         [MentorshipStatus.Completed]: "Mentorship Completed",
-        [MentorshipStatus.Cancelled]: "Mentorship Cancelled",
+        [MentorshipStatus.Cancelled]: "Request Cancelled",
       };
 
-      return (
-        <button
-          disabled
-          className={`mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm ${buttonStyles[mentorshipStatus]}`}>
-          {statusText[mentorshipStatus]}
-        </button>
-      );
-    }
+      const currentStatus =
+        status || (hasActiveMentorship ? MentorshipStatus.Active : null);
 
-    // If disabled for other reasons (e.g., has active mentorship with another mentor)
-    if (disabled) {
       return (
         <button
           disabled
-          className="mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm bg-gray-100 text-gray-500"
-          title={disabledReason}>
-          {disabledReason || "Not Available"}
+          className={`mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm ${
+            currentStatus !== null
+              ? buttonStyles[currentStatus]
+              : "bg-gray-100 text-gray-500"
+          }`}>
+          {currentStatus !== null
+            ? statusText[currentStatus]
+            : disabledReason || "Active Mentorship with Another Mentor"}
         </button>
       );
     }
@@ -103,9 +128,7 @@ export function MentorCard({
       </div>
 
       <div className="mt-2">
-        <p className="text-gray-600 text-xs line-clamp-2">
-          {mentor.bio || "No bio available"}
-        </p>
+        <p className="text-gray-600 text-xs line-clamp-2">{mentor.bio || ""}</p>
       </div>
 
       <div className="mt-2">

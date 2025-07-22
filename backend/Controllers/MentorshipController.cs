@@ -76,5 +76,28 @@ namespace backend.Controllers
             var mentorships = await _mentorshipService.GetCurrentMentorshipsAsync(userId);
             return Ok(mentorships);
         }
+
+        [HttpPost("{mentorshipId}/cancel")]
+        [Authorize]
+        public async Task<ActionResult<MentorshipResponseDto>> CancelMentorship(Guid mentorshipId)
+        {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+            throw new UnauthorizedException("User not authenticated"));
+
+            var mentorship = await _mentorshipService.CancelMentorshipAsync(userId, mentorshipId);
+            return Ok(mentorship);
+        }
+
+        // Get pending requests for mentor
+        [HttpGet("pending")]
+        [Authorize(Roles = "Mentor")]
+        public async Task<ActionResult<List<MentorshipResponseDto>>> GetPendingRequests()
+        {
+            var mentorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? throw new UnauthorizedException("User not authenticated"));
+
+            var requests = await _mentorshipService.GetPendingRequestsAsync(mentorId);
+            return Ok(requests);
+        }
     }
 }

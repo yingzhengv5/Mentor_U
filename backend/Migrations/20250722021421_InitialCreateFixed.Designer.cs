@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250714034636_InitialCreateFixed")]
+    [Migration("20250722021421_InitialCreateFixed")]
     partial class InitialCreateFixed
     {
         /// <inheritdoc />
@@ -135,6 +135,9 @@ namespace backend.Migrations
 
                     b.Property<Guid>("MentorId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");

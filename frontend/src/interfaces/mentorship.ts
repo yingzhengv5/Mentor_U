@@ -2,10 +2,10 @@ import { UserRole } from "./auth";
 import { UserDto } from "./auth";
 
 export enum MentorshipStatus {
-  Pending = "Pending",
-  Active = "Active",
-  Completed = "Completed",
-  Cancelled = "Cancelled",
+  Pending = 0,
+  Active = 1,
+  Completed = 2,
+  Cancelled = 3,
 }
 
 export enum MentorshipDuration {
@@ -17,7 +17,7 @@ export enum MentorshipDuration {
 export interface MentorshipRequest {
   mentorId: string;
   message?: string;
-  duration: MentorshipDuration;
+  duration: MentorshipDuration; // This will now be a number (0, 1, or 2)
 }
 
 export interface Mentorship {

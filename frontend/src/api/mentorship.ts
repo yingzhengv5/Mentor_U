@@ -35,7 +35,7 @@ export const mentorshipApi = {
       const response = await api.post<Mentorship>("/mentorship/request", {
         mentorId: request.mentorId,
         message: request.message,
-        duration: Number(request.duration), // Convert enum to number
+        duration: request.duration, // Already a number (0, 1, or 2)
       });
       return response.data;
     } catch (error) {
@@ -64,10 +64,44 @@ export const mentorshipApi = {
     mentorshipId: string,
     accept: boolean
   ): Promise<Mentorship> => {
-    const response = await api.post<Mentorship>(
-      `/mentorship/${mentorshipId}/respond`,
-      { accept }
-    );
+    try {
+      const response = await api.post<Mentorship>(
+        `/mentorship/${mentorshipId}/respond`,
+        accept, // 直接发送 boolean 值，而不是包装在对象中
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error details:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: error.config,
+        });
+        if (error.response?.status === 400) {
+          throw new Error(
+            `Bad request: ${JSON.stringify(error.response.data)}`
+          );
+        }
+        if (error.response?.status === 401) {
+          throw new Error("Unauthorized: Please log in again");
+        }
+      }
+      throw error;
+    }
+  },
+
+  cancelMentorship: async (mentorshipId: string): Promise<void> => {
+    await api.post(`/mentorship/${mentorshipId}/cancel`);
+  },
+
+  getPendingRequests: async (): Promise<Mentorship[]> => {
+    const response = await api.get<Mentorship[]>("/mentorship/pending");
     return response.data;
   },
 

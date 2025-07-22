@@ -5,17 +5,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { RequestStatus } from "@/interfaces/group";
+import { useMentorship } from "@/contexts/MentorshipContext";
+import { UserRole } from "@/interfaces/auth";
+import { MentorshipStatus } from "@/interfaces/mentorship";
+import { Mentorship } from "@/interfaces/mentorship";
 
 export default function RequestsPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { myRequests: groupRequests, isLoading, refreshGroups } = useGroup();
   const {
-    pendingRequests,
-    myRequests,
-    approveRequest,
-    rejectRequest,
-    isLoading,
-    refreshGroups,
-  } = useGroup();
+    myRequests: mentorshipRequests,
+    respondToRequest: respondToMentorshipRequest,
+  } = useMentorship();
+
   const router = useRouter();
 
   // Fetch requests data periodically
@@ -39,23 +41,16 @@ export default function RequestsPage() {
     return () => clearInterval(intervalId);
   }, [user, router, authLoading, pollRequests]);
 
-  const handleApprove = async (groupId: string, userId: string) => {
+  const handleMentorshipResponse = async (
+    mentorshipId: string,
+    accept: boolean
+  ) => {
     try {
-      await approveRequest(groupId, userId);
+      await respondToMentorshipRequest(mentorshipId, accept);
       pollRequests();
     } catch (err) {
-      console.error("Error approving request:", err);
-      alert("Failed to approve request. Please try again.");
-    }
-  };
-
-  const handleReject = async (groupId: string, userId: string) => {
-    try {
-      await rejectRequest(groupId, userId);
-      pollRequests();
-    } catch (err) {
-      console.error("Error rejecting request:", err);
-      alert("Failed to reject request. Please try again.");
+      console.error("Error responding to mentorship request:", err);
+      alert("Failed to respond to mentorship request. Please try again.");
     }
   };
 
@@ -93,6 +88,54 @@ export default function RequestsPage() {
     }
   };
 
+  const renderMentorshipActions = (request: Mentorship) => {
+    if (request.status !== MentorshipStatus.Pending) {
+      return (
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-medium ${getMentorshipStatusColor(
+            request.status
+          )}`}>
+          {getMentorshipStatusText(request.status)}
+        </span>
+      );
+    }
+
+    return (
+      <div className="flex space-x-3">
+        <button
+          onClick={() => handleMentorshipResponse(request.id, false)}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+          Reject
+        </button>
+        <button
+          onClick={() => handleMentorshipResponse(request.id, true)}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+          Approve
+        </button>
+      </div>
+    );
+  };
+
+  const getMentorshipStatusColor = (status: MentorshipStatus) => {
+    const colors = {
+      [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800",
+      [MentorshipStatus.Active]: "bg-green-100 text-green-800",
+      [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600",
+      [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800",
+    };
+    return colors[status];
+  };
+
+  const getMentorshipStatusText = (status: MentorshipStatus) => {
+    const statusText = {
+      [MentorshipStatus.Pending]: "Pending",
+      [MentorshipStatus.Active]: "Active",
+      [MentorshipStatus.Completed]: "Completed",
+      [MentorshipStatus.Cancelled]: "Cancelled",
+    };
+    return statusText[status];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,83 +160,113 @@ export default function RequestsPage() {
           </button>
         </div>
 
-        {/* Requests I need to handle */}
-        {pendingRequests.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Pending Approvals
-            </h2>
-            <div className="grid gap-4">
-              {pendingRequests.map((request) => (
+        {/* Group Requests Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Group Requests
+          </h2>
+          {groupRequests.map((request) => (
+            <div
+              key={`group-${request.groupId}`}
+              className="mb-4 bg-white rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-medium text-gray-900">
+                    {request.groupName}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    Created by {request.creatorName}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    request.status
+                  )}`}>
+                  {getStatusText(request.status)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {groupRequests.length === 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <p className="text-gray-500">No group requests</p>
+            </div>
+          )}
+        </div>
+
+        {/* Mentorship Requests Section */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Mentorship Requests
+          </h2>
+          {user?.role === UserRole.Mentor ? (
+            // Mentor View
+            <div>
+              {mentorshipRequests.map((request) => (
                 <div
-                  key={`${request.userId}-${request.groupId}`}
-                  className="bg-white rounded-lg shadow-sm p-6">
+                  key={`mentorship-${request.id}`}
+                  className="mb-4 bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {request.user.firstName} {request.user.lastName}
-                      </h3>
+                      <h4 className="text-base font-medium text-gray-900">
+                        Student: {request.student.firstName}{" "}
+                        {request.student.lastName}
+                      </h4>
                       <p className="text-sm text-gray-500">
-                        wants to join{" "}
-                        <span className="font-medium">{request.groupName}</span>
+                        Duration: {request.duration}
                       </p>
+                      {request.message && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Message: {request.message}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() =>
-                          handleReject(request.groupId!, request.userId)
-                        }
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                        Reject
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleApprove(request.groupId!, request.userId)
-                        }
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
-                        Approve
-                      </button>
-                    </div>
+                    {renderMentorshipActions(request)}
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* My requests */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            My Group Requests
-          </h2>
-          {myRequests.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-500">No requests made yet</p>
+              {mentorshipRequests.length === 0 && (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <p className="text-gray-500">No mentorship requests</p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="grid gap-4">
-              {myRequests.map((request) => (
+            // Student View
+            <div>
+              {mentorshipRequests.map((request) => (
                 <div
-                  key={`${request.userId}-${request.groupId}`}
-                  className="bg-white rounded-lg shadow-sm p-6">
+                  key={`mentorship-${request.id}`}
+                  className="mb-4 bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {request.groupName}
-                      </h3>
+                      <h4 className="text-base font-medium text-gray-900">
+                        Mentor: {request.mentor.firstName}{" "}
+                        {request.mentor.lastName}
+                      </h4>
                       <p className="text-sm text-gray-500">
-                        Created by {request.creatorName}
+                        Duration: {request.duration}
                       </p>
+                      {request.message && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Message: {request.message}
+                        </p>
+                      )}
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${getMentorshipStatusColor(
                         request.status
                       )}`}>
-                      {getStatusText(request.status)}
+                      {getMentorshipStatusText(request.status)}
                     </span>
                   </div>
                 </div>
               ))}
+              {mentorshipRequests.length === 0 && (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <p className="text-gray-500">No mentorship requests</p>
+                </div>
+              )}
             </div>
           )}
         </div>
