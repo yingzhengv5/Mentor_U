@@ -114,53 +114,28 @@ export function MentorshipProvider({
         duration,
       });
 
-      // 立即更新本地状态，但不要取消其他请求
       setMentorships((prev) => [...prev, response]);
-
-      // 刷新数据确保一致性
-      await loadMentorships();
 
       alert("Mentorship request sent successfully!");
     } catch (error) {
       console.error("Error requesting mentorship:", error);
+      await loadMentorships();
       throw error;
     }
   };
 
-  // 当一个 mentorship 变为 active 时，取消其他请求
+  // When one mentorship become active, delete this student's other pending request
   const respondToRequest = async (mentorshipId: string, accept: boolean) => {
     try {
-      await mentorshipApi.respondToRequest(mentorshipId, accept);
-
-      // 立即更新本地状态
-      setMentorships((prev) =>
-        prev.map((m) => {
-          if (m.id === mentorshipId) {
-            return {
-              ...m,
-              status: accept
-                ? MentorshipStatus.Active
-                : MentorshipStatus.Cancelled,
-            };
-          }
-          // 如果接受了请求，将该学生的其他请求都设为取消
-          if (accept) {
-            const acceptedRequest = prev.find((r) => r.id === mentorshipId);
-            if (
-              acceptedRequest &&
-              m.student.id === acceptedRequest.student.id
-            ) {
-              return {
-                ...m,
-                status: MentorshipStatus.Cancelled,
-              };
-            }
-          }
-          return m;
-        })
+      const response = await mentorshipApi.respondToRequest(
+        mentorshipId,
+        accept
       );
 
-      // 刷新数据确保一致性
+      if (accept && response.status === MentorshipStatus.Active) {
+        await mentorshipApi.deletePendingRequests(response.student.id);
+      }
+
       await loadMentorships();
     } catch (error) {
       console.error("Error responding to request:", error);
@@ -186,7 +161,7 @@ export function MentorshipProvider({
 
       // Check if user has any active mentorship
       const hasActiveMentorship = mentorships.some(
-        (m) => m.status === MentorshipStatus.Active
+        (m) => m.student.id === user.id && m.status === MentorshipStatus.Active
       );
 
       // Find specific mentorship with this mentor
@@ -206,7 +181,6 @@ export function MentorshipProvider({
   const cancelMentorship = async (mentorshipId: string) => {
     try {
       await mentorshipApi.cancelMentorship(mentorshipId);
-      // 立即更新本地状态
       setMentorships((prev) =>
         prev.map((m) =>
           m.id === mentorshipId
@@ -217,7 +191,7 @@ export function MentorshipProvider({
             : m
         )
       );
-      // 刷新数据确保一致性
+
       await loadMentorships();
     } catch (error) {
       console.error("Error cancelling mentorship:", error);
@@ -233,7 +207,7 @@ export function MentorshipProvider({
   const completeMentorship = async (mentorshipId: string) => {
     try {
       await mentorshipApi.completeMentorship(mentorshipId);
-      // 立即更新本地状态
+
       setMentorships((prev) =>
         prev.map((m) =>
           m.id === mentorshipId
@@ -244,7 +218,7 @@ export function MentorshipProvider({
             : m
         )
       );
-      // 刷新数据确保一致性
+
       await loadMentorships();
     } catch (error) {
       console.error("Error completing mentorship:", error);

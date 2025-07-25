@@ -82,7 +82,7 @@ export default function Dashboard() {
         <Link
           href="/auth/login"
           className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-          Login to Join
+          Join
         </Link>
       );
     }
@@ -105,7 +105,7 @@ export default function Dashboard() {
           <button
             className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-md cursor-not-allowed"
             disabled>
-            Request Pending
+            Pending
           </button>
         );
 
@@ -123,7 +123,7 @@ export default function Dashboard() {
           <button
             className="bg-red-100 text-red-800 px-4 py-2 rounded-md cursor-not-allowed"
             disabled>
-            Request Rejected
+            Rejected
           </button>
         );
 
@@ -132,7 +132,7 @@ export default function Dashboard() {
           <button
             onClick={() => handleJoinGroup(group.id)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-            Join Group
+            Join
           </button>
         );
     }

@@ -3,6 +3,7 @@
 import { UserDto, SkillDto, UserRole } from "@/interfaces/auth";
 import { MentorshipStatus } from "@/interfaces/mentorship";
 import Image from "next/image";
+import { useState } from "react";
 
 interface MentorCardProps {
   mentor: UserDto;
@@ -25,75 +26,76 @@ export function MentorCard({
   mentorshipStatus,
 }: MentorCardProps) {
   const { status, hasActiveMentorship } = mentorshipStatus;
+  const [isRequesting, setIsRequesting] = useState(false);
 
-  const getStatusText = (status: MentorshipStatus | null) => {
-    if (!status) return "";
-
-    const statusText = {
-      [MentorshipStatus.Pending]: "Request Pending",
-      [MentorshipStatus.Active]: "Request Mentorship",
-      [MentorshipStatus.Completed]: "Mentorship Completed",
-      [MentorshipStatus.Cancelled]: "Request Cancelled",
-    };
-
-    return statusText[status];
+  const handleRequestClick = async () => {
+    setIsRequesting(true);
+    try {
+      await onRequestMentorship();
+    } finally {
+      setIsRequesting(false);
+    }
   };
 
   const getStatusButton = () => {
-    // 如果已经存在任何状态的请求，禁用按钮
-    if (mentorshipStatus.status !== null) {
-      return (
-        <button
-          disabled
-          className="mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm bg-gray-100 text-gray-500">
-          {getStatusText(mentorshipStatus.status)}
-        </button>
-      );
-    }
-
     // If user is a mentor, don't show the button
     if (currentUserRole === UserRole.Mentor) {
       return null;
     }
 
-    if (disabled || hasActiveMentorship || status !== null) {
+    // If active mentorship exists, disable all the buttons
+    if (hasActiveMentorship) {
+      return (
+        <button
+          disabled
+          className="mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm bg-gray-100 text-gray-500">
+          Active Mentorship with Another Mentor
+        </button>
+      );
+    }
+
+    if (status !== null || isRequesting) {
       const buttonStyles = {
-        [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800", // 0
-        [MentorshipStatus.Active]: "bg-gray-100 text-gray-600", // 1
-        [MentorshipStatus.Completed]: "bg-gray-100 text-gray-600", // 2
-        [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800", // 3
+        [MentorshipStatus.Pending]: "bg-yellow-100 text-yellow-800",
+        [MentorshipStatus.Active]: "bg-green-100 text-green-600",
+        [MentorshipStatus.Completed]: "bg-green-100 text-green-600",
+        [MentorshipStatus.Cancelled]: "bg-red-100 text-red-800",
       };
 
       const statusText = {
         [MentorshipStatus.Pending]: "Request Pending",
-        [MentorshipStatus.Active]: "Request Mentorship",
+        [MentorshipStatus.Active]: "Active Mentorship",
         [MentorshipStatus.Completed]: "Mentorship Completed",
         [MentorshipStatus.Cancelled]: "Request Cancelled",
       };
-
-      const currentStatus =
-        status || (hasActiveMentorship ? MentorshipStatus.Active : null);
 
       return (
         <button
           disabled
           className={`mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm ${
-            currentStatus !== null
-              ? buttonStyles[currentStatus]
-              : "bg-gray-100 text-gray-500"
+            status ? buttonStyles[status] : "bg-yellow-100 text-yellow-800"
           }`}>
-          {currentStatus !== null
-            ? statusText[currentStatus]
-            : disabledReason || "Active Mentorship with Another Mentor"}
+          {status ? statusText[status] : "Request Pending"}
         </button>
       );
     }
 
-    // Default request button
+    // If button is disabled for other reasons
+    if (disabled) {
+      return (
+        <button
+          disabled
+          className="mt-3 w-full px-3 py-1.5 rounded-md cursor-not-allowed text-sm bg-gray-100 text-gray-500">
+          {disabledReason || "Cannot Request Mentorship"}
+        </button>
+      );
+    }
+
     return (
       <button
-        onClick={onRequestMentorship}
-        className="mt-3 w-full px-3 py-1.5 rounded-md transition-colors text-sm bg-indigo-600 text-white hover:bg-indigo-700">
+        onClick={handleRequestClick}
+        disabled={isRequesting}
+        className="mt-3 w-full px-3 py-1.5 rounded-md transition-colors text-sm bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
         Request Mentorship
       </button>
     );

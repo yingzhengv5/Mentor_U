@@ -9,6 +9,7 @@ import { useMentorship } from "@/contexts/MentorshipContext";
 import { UserRole } from "@/interfaces/auth";
 import { MentorshipStatus } from "@/interfaces/mentorship";
 import { Mentorship } from "@/interfaces/mentorship";
+import { MentorshipDuration } from "@/interfaces/mentorship";
 
 export default function RequestsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -163,6 +164,15 @@ export default function RequestsPage() {
     return statusText[status];
   };
 
+  const getMentorshipDurationText = (duration: MentorshipDuration) => {
+    const durationText = {
+      [MentorshipDuration.OneMonth]: "1 month",
+      [MentorshipDuration.TwoMonths]: "2 months",
+      [MentorshipDuration.ThreeMonths]: "3 months",
+    };
+    return durationText[duration];
+  };
+
   const renderGroupRequests = () => {
     // 如果用户是 group creator，显示待处理的加入请求
     if (groupPendingRequests.length > 0) {
@@ -272,18 +282,21 @@ export default function RequestsPage() {
                   key={`mentorship-${request.id}`}
                   className="mb-4 bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="text-base font-medium text-gray-900">
                         Student: {request.student.firstName}{" "}
                         {request.student.lastName}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        Duration: {request.duration}
+                        Duration: {getMentorshipDurationText(request.duration)}
                       </p>
                       {request.message && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          Message: {request.message}
-                        </p>
+                        <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Message: </span>
+                            {request.message}
+                          </p>
+                        </div>
                       )}
                     </div>
                     {renderMentorshipActions(request)}
@@ -304,18 +317,21 @@ export default function RequestsPage() {
                   key={`mentorship-${request.id}`}
                   className="mb-4 bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="text-base font-medium text-gray-900">
                         Mentor: {request.mentor.firstName}{" "}
                         {request.mentor.lastName}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        Duration: {request.duration}
+                        Duration: {getMentorshipDurationText(request.duration)}
                       </p>
                       {request.message && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          Message: {request.message}
-                        </p>
+                        <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Message: </span>
+                            {request.message}
+                          </p>
+                        </div>
                       )}
                     </div>
                     <span

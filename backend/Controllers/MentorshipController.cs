@@ -56,7 +56,7 @@ namespace backend.Controllers
         // Respond to mentorship request
         [HttpPost("{mentorshipId}/respond")]
         [Authorize(Roles = "Mentor")]
-        public async Task<ActionResult<MentorshipResponseDto>> RespondToRequest(
+        public async Task<ActionResult<MentorshipResponseDto?>> RespondToRequest(
             Guid mentorshipId,
             [FromBody] bool accept)
         {
@@ -64,6 +64,12 @@ namespace backend.Controllers
                 ?? throw new UnauthorizedException("User not authenticated"));
 
             var mentorship = await _mentorshipService.RespondToMentorshipRequestAsync(mentorId, mentorshipId, accept);
+
+            if (!accept)
+            {
+                return Ok(new { message = "Request rejected and removed successfully" });
+            }
+
             return Ok(mentorship);
         }
 
@@ -130,6 +136,21 @@ namespace backend.Controllers
             catch (BadRequestException ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("pending/{studentId}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteStudentPendingRequests(Guid studentId)
+        {
+            try
+            {
+                await _mentorshipService.DeleteStudentPendingRequestsAsync(studentId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

@@ -139,6 +139,16 @@ export const mentorshipApi = {
     return response.data;
   },
 
+  // Delete pending requests for a student
+  deletePendingRequests: async (studentId: string): Promise<void> => {
+    try {
+      await api.delete(`/mentorship/pending/${studentId}`);
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  },
+
   // Get current user's mentorships
   getCurrentMentorships: async (): Promise<Mentorship[]> => {
     const response = await api.get<Mentorship[]>("/mentorship/current");

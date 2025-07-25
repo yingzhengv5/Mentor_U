@@ -84,16 +84,6 @@ namespace backend.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Cancel any existing pending requests
-                var existingPendingRequests = await _context.Mentorships
-                    .Where(m => m.StudentId == studentId && m.Status == MentorshipStatus.Pending)
-                    .ToListAsync();
-
-                foreach (var pendingRequest in existingPendingRequests)
-                {
-                    pendingRequest.Status = MentorshipStatus.Cancelled;
-                }
-
                 // Create new mentorship request
                 var mentorship = new Mentorship
                 {
@@ -190,7 +180,7 @@ namespace backend.Services
 
 
         // Accept or reject mentorship request
-        public async Task<MentorshipResponseDto> RespondToMentorshipRequestAsync(Guid mentorId, Guid mentorshipId, bool accept)
+        public async Task<MentorshipResponseDto?> RespondToMentorshipRequestAsync(Guid mentorId, Guid mentorshipId, bool accept)
         {
             var mentorship = await _context.Mentorships
                 .Include(m => m.Mentor)
@@ -204,28 +194,34 @@ namespace backend.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                mentorship.Status = accept ? MentorshipStatus.Active : MentorshipStatus.Cancelled;
-
                 if (accept)
                 {
-                    // 将该学生的其他请求都设为取消
-                    var otherRequests = await _context.Mentorships
-                        .Where(m => m.StudentId == mentorship.StudentId && m.Id != mentorship.Id)
+                    // Get all other pending requests from this student
+                    var otherPendingRequests = await _context.Mentorships
+                        .Where(m => m.StudentId == mentorship.StudentId
+                            && m.Id != mentorship.Id
+                            && m.Status == MentorshipStatus.Pending)
                         .ToListAsync();
 
-                    foreach (var request in otherRequests)
-                    {
-                        request.Status = MentorshipStatus.Cancelled;
-                    }
+                    // Remove all other pending requests
+                    _context.Mentorships.RemoveRange(otherPendingRequests);
 
+                    // Accept current request
+                    mentorship.Status = MentorshipStatus.Active;
                     mentorship.StartDate = DateTime.UtcNow;
                     mentorship.EndDate = CalculateEndDate(DateTime.UtcNow, mentorship.Duration);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    return await GetMentorshipResponseDto(mentorship.Id);
                 }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return await GetMentorshipResponseDto(mentorship.Id);
+                else
+                {
+                    _context.Mentorships.Remove(mentorship);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    return null;
+                }
             }
             catch
             {
@@ -481,6 +477,24 @@ namespace backend.Services
             await _context.SaveChangesAsync();
 
             return await GetMentorshipResponseDto(mentorship.Id);
+        }
+
+        public async Task<List<Mentorship>> GetStudentPendingRequestsAsync(Guid studentId)
+        {
+            return await _context.Mentorships
+                .Where(m => m.StudentId == studentId && m.Status == MentorshipStatus.Pending)
+                .ToListAsync();
+        }
+
+        public async Task DeleteStudentPendingRequestsAsync(Guid studentId)
+        {
+            var pendingRequests = await GetStudentPendingRequestsAsync(studentId);
+            _context.Mentorships.RemoveRange(pendingRequests);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
     }
 }
